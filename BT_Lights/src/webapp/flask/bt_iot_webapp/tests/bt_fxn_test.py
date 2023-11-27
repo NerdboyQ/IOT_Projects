@@ -10,17 +10,26 @@ PASSKEY="1234"
 BTADDR="00:14:03:06:12:84"
 BTPORT=1
 
+bt_devices = {
+    "BLE" : [],
+    "NonBLE" : []
+}
+
 async def ble_scan():
     nearby_devices = await BleakScanner.discover()
     print(f"Found {len(nearby_devices)} ble devices:")
     for d in nearby_devices:
-        print(f" {d.address} : {d.name}")
+        if d.name is not None:
+            print(f" {d.address} : {d.name}")
+            bt_devices["BLE"].append(d.name)
 
 async def non_ble_scan():
     nearby_devices = bluetooth.discover_devices(lookup_names=True)
     print(f"Found {len(nearby_devices)} non-ble devices:")
     for addr, name in nearby_devices:
-        print(f" {addr} : {name}")
+        if name is not None:
+            print(f" {addr} : {name}")
+            bt_devices["NonBLE"].append(name)
 
 def pair_nonBLE(addr:str):
     # kill any "bluetooth-agent" process that is already running
@@ -73,7 +82,13 @@ def pair_nonBLE(addr:str):
         # Error handler
         pass
 
+async def run_BT_scan():
+    await asyncio.gather(non_ble_scan(), ble_scan())
+    for k in bt_devices:
+        print(k,": {",",".join(bt_devices[k]),"}")
+
 
 #asyncio.run(ble_scan())
 #asyncio.run(non_ble_scan())
-pair_nonBLE(BTADDR)
+asyncio.run(run_BT_scan())
+#pair_nonBLE(BTADDR)
