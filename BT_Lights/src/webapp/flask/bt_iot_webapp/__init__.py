@@ -5,6 +5,7 @@ def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY='dev',
+        TESTING=True, # needed for auto update while developing
         DATABASE=os.path.join(app.instance_path, 'bt_iot_webapp.sqlite'),
     )
 
@@ -17,10 +18,9 @@ def create_app(test_config=None):
         os.makedirs(app.instance_path)
     except OSError:
         pass
-
-
-    @app.route('/')
-    def homepage():
-        return 'We Running Bih'
     
     return app
+
+app = create_app()
+
+from bt_iot_webapp import views
