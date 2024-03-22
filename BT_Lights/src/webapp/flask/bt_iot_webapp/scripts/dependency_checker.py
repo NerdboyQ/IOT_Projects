@@ -11,14 +11,14 @@ import time as timer
 # Check for necessary dependencies
 required = {
     'babel',
-    'Flask',
-    'Flask-SQLAlchemy',
-    'openpyxl',
-    'pandas',
+    'bleak',    # Bluetooth LE support
+    'Flask',    # webapp support
+    'Flask-SQLAlchemy', # webapp backend database support
+    'openpyxl', # excel support
+    'pandas',   # data analyasis support using dataframes
     'Path',
-    'selenium',
-    'tkcalendar',
-    'webdriver-manager'
+    'PyBluez',  # Bluetooth Classic support
+    'selenium', # webscraping
 }
 process = subprocess.Popen(['pip','list'], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 out, err = process.communicate()
