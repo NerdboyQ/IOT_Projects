@@ -9,3 +9,14 @@ def render_homepage():
     Default homepage
     """
     return render_template("index.html")
+
+@app.route("/scan-for-bt-devices")
+def get_bt_devices():
+    """
+    Scanning for nearby bluetooth devices.
+    """ 
+    print("Scanning for BT devices...")
+    devices = {"BLE":[], "nonBLE": []}
+
+
+    return jsonify(devices)
