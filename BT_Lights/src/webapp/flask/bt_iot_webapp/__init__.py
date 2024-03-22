@@ -1,4 +1,5 @@
 import os
+from bt_iot_webapp.scripts import dependency_checker
 from flask import Flask
 
 def create_app(test_config=None):
