@@ -6,3 +6,7 @@ h1, h2, h3 {
     color: #ff00ff;
     font-weight: bold;
 }
+
+::part(rando) {
+    color:bisque;
+}
