@@ -21,14 +21,16 @@
     <body>
         
         <!-- <div class="row table-wrapper center tbl-container"> -->
-
-            <table id="bt-dev-tbl" class=" center responsive-table">
+        <div style="width:400px;">
+            <table id="bt-dev-tbl" class="center responsive-table" style="width:400px; max-height: 500px;">
                 <thead>
-                    <button id="bt-scan-btn" class="bt-btn" style="width:400px;height: 50px;">Scan for BT Devices</button>
+                    <tr>
+                        <button id="bt-scan-btn" class="bt-btn" style="min-width: 100%; height: 50px;">Scan for BT Devices</button>
+                    </tr>
                 </thead>
                 <tbody id="bt-dev-tbody" class="scrollspy">
-                    <!-- Test Row, will be deleted -->
-                    <tr>
+                    <!-- Test Rows, will be deleted -->
+                    <!-- <tr>
                         <bt-dev-container>
                             <h4 slot="bt-dev-name">Ghost Trap1</h4>
                             <h5 slot="bt-addr">B0:12:4E:7A:D1</h5>
@@ -39,9 +41,11 @@
                             <h4 slot="bt-dev-name">Ghost Trap2</h4>
                             <h5 slot="bt-addr">A7:F3:EE:5C:33</h5>
                         </bt-dev-container>
-                    </tr>
+                    </tr> -->
                 </tbody>
             </table>
+        </div>
+            
     
         <!-- </div> -->
         

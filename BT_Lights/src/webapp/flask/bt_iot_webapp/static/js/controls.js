@@ -4,9 +4,12 @@ function main(){
     const bt_scan_btn = document.getElementById("bt-scan-btn");
     var bt_device_tbody = document.getElementById("bt-dev-tbody");
     bt_scan_btn.addEventListener('click', run_bt_scan);
+    var tbl = document.getElementById("bt-dev-tbl");
+    bt_device_tbody.innerHTML = '';
 
     function run_bt_scan(){
         console.log("clicked");
+        bt_scan_btn.disabled = true;
         console.log(bt_scan_btn.disabled);
         bt_device_tbody.innerHTML = '';
 
@@ -33,6 +36,7 @@ function main(){
                         bt_device_tbody.appendChild(tr);
                     }
                 }
+                bt_scan_btn.disabled = false;
             }
         );
     }
