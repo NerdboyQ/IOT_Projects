@@ -8,5 +8,5 @@ h1, h2, h3 {
 }
 
 ::part(rando) {
-    color:bisque;
+    color:red;
 }
