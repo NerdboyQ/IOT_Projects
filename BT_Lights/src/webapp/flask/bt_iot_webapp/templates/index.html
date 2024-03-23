@@ -17,16 +17,18 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     </head>
     <body>
-        <h1>Testing1</h1>
-        <h2>Testing2</h2>
-        <h3>Testing3</h3>
-        <h4>Testing4</h4>
-        <h5>Testing5</h5>
-        <h6>Testing6</h6>
-        <button></button>
-        <bt-dev-container>
-            <h2 slot="bt-dev-name">testing</h2>
-            <h4 slot="bt-addr">testing</h2>
-        </bt-dev-container>
+        <div>
+            <bt-dev-container>
+                <h4 slot="bt-dev-name">Ghost Trap1</h4>
+                <h5 slot="bt-addr">B0:12:4E:7A:D1</h5>
+            </bt-dev-container>
+        </div>
+        <div>
+            <bt-dev-container connected=true>
+                <h4 slot="bt-dev-name">Ghost Trap2</h4>
+                <h5 slot="bt-addr">A7:F3:EE:5C:33</h5>
+            </bt-dev-container>
+        </div>
+        
     </body>
 </html>
