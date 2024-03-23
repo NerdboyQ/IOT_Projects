@@ -1,4 +1,5 @@
 import os
+from flask_sqlalchemy import SQLAlchemy
 from bt_iot_webapp.scripts import dependency_checker
 from flask import Flask
 
@@ -24,4 +25,10 @@ def create_app(test_config=None):
 
 app = create_app()
 
-from bt_iot_webapp import views
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'bt_iot.db') # Creates table
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # ignores any warning messages
+db = SQLAlchemy(app)
+
+from bt_iot_webapp import views, models
