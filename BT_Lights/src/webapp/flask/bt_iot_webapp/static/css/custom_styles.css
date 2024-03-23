@@ -7,6 +7,12 @@ h1, h2, h3 {
     font-weight: bold;
 }
 
+button {
+    border-radius: 8px;
+    margin: 10px;
+    font-weight: bold;
+}
+
 ::part(rando) {
-    color:red;
+    color:rgb(54, 37, 114);
 }
