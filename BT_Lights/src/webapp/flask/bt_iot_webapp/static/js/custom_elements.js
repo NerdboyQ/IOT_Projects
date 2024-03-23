@@ -67,7 +67,11 @@ class BluetoothDevContainer extends HTMLElement {
     
     constructor(){
         super();
-        this.connected = false;
+        // When dynamicallly creating custom object, attributes cannot be set
+        // in the constructor. This violates the DOM limitations of the element
+        // writing its own attributes.
+        // this.connected = false;
+        
         console.log("creating bt container")
         // This is the "container/sandbox/canvas" for the custom element
         // opened means the main js can access the internal elements of the element
