@@ -13,22 +13,37 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <!--Import custom elements -->
         <script src="{{ url_for('static', filename='js/custom_elements.js') }}" type="module"></script>
+        <!--Import custom controls functionality -->
+        <script src="{{ url_for('static', filename='js/controls.js') }}" type="module"></script>
         <!--Let browser know website is optimized for mobile-->
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     </head>
     <body>
-        <div>
-            <bt-dev-container>
-                <h4 slot="bt-dev-name">Ghost Trap1</h4>
-                <h5 slot="bt-addr">B0:12:4E:7A:D1</h5>
-            </bt-dev-container>
-        </div>
-        <div>
-            <bt-dev-container connected=true>
-                <h4 slot="bt-dev-name">Ghost Trap2</h4>
-                <h5 slot="bt-addr">A7:F3:EE:5C:33</h5>
-            </bt-dev-container>
-        </div>
+        
+        <!-- <div class="row table-wrapper center tbl-container"> -->
+
+            <table id="bt-dev-tbl" class=" center responsive-table">
+                <thead>
+                    <button id="bt-scan-btn" class="bt-btn" style="width:400px;height: 50px;">Scan for BT Devices</button>
+                </thead>
+                <tbody id="bt-dev-tbody" class="scrollspy">
+                    <!-- Test Row, will be deleted -->
+                    <tr>
+                        <bt-dev-container>
+                            <h4 slot="bt-dev-name">Ghost Trap1</h4>
+                            <h5 slot="bt-addr">B0:12:4E:7A:D1</h5>
+                        </bt-dev-container>
+                    </tr>
+                    <tr>
+                        <bt-dev-container connected=true>
+                            <h4 slot="bt-dev-name">Ghost Trap2</h4>
+                            <h5 slot="bt-addr">A7:F3:EE:5C:33</h5>
+                        </bt-dev-container>
+                    </tr>
+                </tbody>
+            </table>
+    
+        <!-- </div> -->
         
     </body>
 </html>
