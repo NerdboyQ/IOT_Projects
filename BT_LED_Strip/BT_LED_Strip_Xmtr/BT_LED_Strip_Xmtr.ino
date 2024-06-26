@@ -3,6 +3,48 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+// Rotary Encoder Pins
+#define ENC_A 3
+#define ENC_B 2
+#define SEL_C 4
+
+unsigned long _lastIncReadTime = micros();
+unsigned long _lastDecReadTime = micros();
+const uint16_t _pauseLength = 25000;
+
+volatile int8_t counter = 0;
+volatile int8_t lastCounter = counter;
+// Interrupt_Routine to process encode transitions
+void read_encoder() {
+  static uint8_t old_AB = 3;  // Lookup Table Index
+  static int8_t encval = 0;   // encode value
+  static const int8_t enc_states[] = {
+     0, -1,  1,  0,  
+     1,  0,  0, -1, 
+    -1,  0,  0,  1,
+     0,  1, -1,  0
+  };
+
+  old_AB <<= 2;   // Remember Previous State
+
+  if (digitalRead(ENC_A)) old_AB |= 0x02;   // Add current state of pin A
+  if (digitalRead(ENC_B)) old_AB |= 0x01;   // Add current state of pin B
+
+  encval += enc_states[( old_AB & 0x0F )];
+
+  // update counter if encoder has rotated a full indent
+  if ( encval > 3 || encval < -3) {
+    int changevalue = (encval > 0) - (encval < 0);
+    if((micros() - _lastIncReadTime) < _pauseLength) {
+      changevalue = 10*changevalue;
+    } 
+    _lastIncReadTime = micros();
+    counter = counter + changevalue;
+    encval = 0;
+  }
+
+}
+
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 
@@ -133,6 +175,14 @@ const unsigned char led_menu_bmp [] PROGMEM = {
 void setup() {
   Serial.begin(9600);
 
+  // Encoder Pins
+  pinMode(ENC_A, INPUT_PULLUP);
+  pinMode(ENC_B, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(ENC_A), read_encoder, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENC_B), read_encoder, CHANGE);
+
+  pinMode(SEL_C, INPUT_PULLUP);
+
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
@@ -148,6 +198,8 @@ void setup() {
 
   // Clear the buffer
   display.clearDisplay();
+
+  testdrawbitmap();
 }
 
 void testscrolltext(void) {
@@ -230,8 +282,6 @@ void testdrawbitmap() {
   display.println(items[2]);
 
   display.display();
-  delay(2000);
-
 }
 
 
@@ -240,7 +290,17 @@ int8_t n = 1;
 void loop() {
   // put your main code here, to run repeatedly:
   // testscrolltext();
+  if (counter > lastCounter) {
+    shift_arr();
+    testdrawbitmap();
+    lastCounter = counter;
+  } else if  (counter < lastCounter) {
+    shift_arr(false);
+    testdrawbitmap();
+    lastCounter = counter;
+  }
 
-  testdrawbitmap();
-  shift_arr();
+  if (!digitalRead(SEL_C)) {
+    Serial.println("selection");
+  } 
 }
