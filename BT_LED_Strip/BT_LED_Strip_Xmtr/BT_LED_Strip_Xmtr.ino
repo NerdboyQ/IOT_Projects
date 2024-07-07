@@ -3,6 +3,11 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+#include <SoftwareSerial.h>
+#define RX 10 // Connect to HM10 TX for both AT and normal modes
+#define TX 11  // Connect to HM10 RX for both AT and normal modes
+SoftwareSerial HM10(RX,TX);
+
 // Rotary Encoder Pins
 #define ENC_A 3
 #define ENC_B 2
@@ -10,6 +15,7 @@
 
 unsigned long _lastIncReadTime = micros();
 unsigned long _lastDecReadTime = micros();
+unsigned long _lastSelectTime = micros();
 const uint16_t _pauseLength = 25000;
 
 volatile int8_t counter = 0;
@@ -170,10 +176,50 @@ const unsigned char led_menu_bmp [] PROGMEM = {
 // 	led_menu_bmp
 // };
 
+bool sendAtCmd(char* cmd) {
+  Serial.write("========================\n\n");
+  Serial.write("Cmd:");
+  Serial.write(cmd);
+  Serial.write("\n");
+  HM10.write(cmd);
+  
+  if (String(cmd).indexOf("DISC") > 0) delay(3500); // default scan time is 3s
+  else delay(500);
+  while (HM10.available()) {
+    Serial.write(HM10.read());
+  }
+  Serial.write("\n");
+  return 1;
+}
 
+/**
+* Print HM10 Settings
+*
+*
+*/
+void printHM10_settings() {
+  sendAtCmd("AT");  // Verifies solid UART communication if not actively connected, otherwise kills current connection
+  sendAtCmd("AT+NAME?");  // Gets the BT Device Advertised name
+  sendAtCmd("AT+ADDR?");  // Gets the BT Device BT Address
+  sendAtCmd("AT+BAUD?");  // Gets the Currently set baudrate 
+  sendAtCmd("AT+ROLE?");  // Gets the Currently set role (0: slave/peripheral, 1: master/central) 
+  sendAtCmd("AT+IMME1"); // Set Module Work type (only used for central/master mode) - 0: start work immediately, 1: only response to AT commands
+  sendAtCmd("AT+IMME?");
+  sendAtCmd("AT+ALLO1");  // Set Whitelist enabled mode; Enabled (1), Disable (0)
+  sendAtCmd("AT+ALLO?");  // Get Whitelist enabled mode; Enabled (1), Disable (0)
+  sendAtCmd("AT+AD10035FF0D419B");  // Set Whitelisted device 1 to 0035FF0D419B
+  sendAtCmd("AT+CON0035FF0D419B"); // attempt to connect to device 0035FF0D419B
+  
+  Serial.write("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+}
 
 void setup() {
+  HM10.begin(9600);
   Serial.begin(9600);
+  while (!Serial) {
+    HM10.println("Connect Serial Commnication");
+  }
+  printHM10_settings();
 
   // Encoder Pins
   pinMode(ENC_A, INPUT_PULLUP);
@@ -286,21 +332,26 @@ void testdrawbitmap() {
 
 
 int8_t n = 1;
-
+bool newMsgRcvd = false;
 void loop() {
+  HM10.write(0xFF);
+  delay(5000);
+  // Always check for bt messages, then print to the screen
+  
   // put your main code here, to run repeatedly:
   // testscrolltext();
-  if (counter > lastCounter) {
-    shift_arr();
-    testdrawbitmap();
-    lastCounter = counter;
-  } else if  (counter < lastCounter) {
-    shift_arr(false);
-    testdrawbitmap();
-    lastCounter = counter;
-  }
+  // if (counter > lastCounter) {
+  //   shift_arr();
+  //   testdrawbitmap();
+  //   lastCounter = counter;
+  // } else if  (counter < lastCounter) {
+  //   shift_arr(false);
+  //   testdrawbitmap();
+  //   lastCounter = counter;
+  // }
 
-  if (!digitalRead(SEL_C)) {
-    Serial.println("selection");
-  } 
+  // if (!digitalRead(SEL_C) & millis() - _lastSelectTime > _pauseLength/100) {
+  //   Serial.println("selection");
+  //   _lastSelectTime = millis();
+  // } 
 }
