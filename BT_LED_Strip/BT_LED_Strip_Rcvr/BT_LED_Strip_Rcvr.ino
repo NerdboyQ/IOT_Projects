@@ -109,23 +109,53 @@ void setup() {
   
   pixels.begin();
   set_strip(VIOLET);
+  pixels.setBrightness(60);
+}
+
+uint32_t reverse_pkt(uint32_t raw_data) {
+  uint32_t flipped = 0;
+  for (char n = 0; n < 32; n+=8){
+    uint32_t tmp = (0xFF & (raw_data >> n));
+    flipped = (flipped << (24 - n)) | tmp;
+  }
+
+  return flipped;
 }
 
 bool newMsgRcvd = false;
+uint32_t newPkt, oldPkt = 0;
+char shift = 24;
+#define PktSize 4
+unsigned char buffer[PktSize];
+char buffer_index;
 void loop() {
   // Always check for bt messages, then print to the screen
-  while (HM10.available()) {
-    Serial.write(HM10.read()+0);
-    newMsgRcvd = true;
+  while (HM10.available() ) {
+    buffer[buffer_index] = HM10.read();
+    Serial.print(buffer[buffer_index], HEX);
+    // newPkt = newPkt | (val << shift);
+    buffer_index++;
+    // shift-=8;
+    // newMsgRcvd = true;
   }
 
-  if (newMsgRcvd) {
+  if (buffer_index == PktSize) {
+    // newPkt = reverse_pkt(newPkt);
+    buffer_index = 0;
+    // for (char i = 0; i < PktSize; i++){
+    //   Serial.print("0x");
+    //   Serial.print(buffer[i], HEX);
+    //   Serial.print(" ");
+    // }
+    // Serial.println("");
+    // Serial.print(newPkt, HEX);
+    oldPkt = newPkt;
+    newPkt = 0; // reset newPkt
+    shift = 24; // reset shift
     Serial.write("\n~\n");
-    set_strip(GREEN);
-    adjust_intensity(0, 50);
+    set_strip(CYAN);
     delay(1000);
     set_strip(WHITE);
-    // adjust_intensity(0, 50);
     newMsgRcvd = false;
   }
   // adjust_intensity(100, 1);
