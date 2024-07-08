@@ -4,6 +4,7 @@
 #include <Adafruit_SSD1306.h>
 
 #include <SoftwareSerial.h>
+#define TEST_LED 6
 #define RX 10 // Connect to HM10 TX for both AT and normal modes
 #define TX 11  // Connect to HM10 RX for both AT and normal modes
 SoftwareSerial HM10(RX,TX);
@@ -62,8 +63,6 @@ void read_encoder() {
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
-#define NUMFLAKES     10 // Number of snowflakes in the animation example
 
 #define LOGO_HEIGHT   16
 #define LOGO_WIDTH    16
@@ -214,13 +213,6 @@ void printHM10_settings() {
 }
 
 void setup() {
-  HM10.begin(9600);
-  Serial.begin(9600);
-  while (!Serial) {
-    HM10.println("Connect Serial Commnication");
-  }
-  printHM10_settings();
-
   // Encoder Pins
   pinMode(ENC_A, INPUT_PULLUP);
   pinMode(ENC_B, INPUT_PULLUP);
@@ -232,20 +224,39 @@ void setup() {
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
-    for(;;); // Don't proceed, loop forever
-  } else {
-    Serial.println("\n\nConnected to OLED");
+    for(;;);
   }
-
-  // Show initial display buffer contents on the screen --
-  // the library initializes this with an Adafruit splash screen.
   display.display();
   delay(2000); // Pause for 2 seconds
 
   // Clear the buffer
   display.clearDisplay();
-
   testdrawbitmap();
+  delay(500);
+
+  HM10.begin(9600);
+  Serial.begin(9600);
+  while (!Serial) {
+    HM10.println("Connect Serial Commnication");
+  }
+  // printHM10_settings();
+  sendAtCmd("AT+CON0035FF0D419B");
+  pinMode(TEST_LED, OUTPUT);
+  // digitalWrite(TEST_LED, HIGH);
+
+  
+
+  
+
+  // // Show initial display buffer contents on the screen --
+  // // the library initializes this with an Adafruit splash screen.
+  // display.display();
+  // delay(2000); // Pause for 2 seconds
+
+  // // Clear the buffer
+  // display.clearDisplay();
+
+  
 }
 
 void testscrolltext(void) {
@@ -334,24 +345,32 @@ void testdrawbitmap() {
 int8_t n = 1;
 bool newMsgRcvd = false;
 void loop() {
-  HM10.write(0xFF);
+  unsigned char pkt[4] = {0x01, 0x02, 0x03, 0x04};
+  HM10.write(pkt, sizeof(pkt));
+  for (char i = 0; i < 4; i++) {
+    Serial.print(pkt[i], HEX);
+  }
+  Serial.print("\n");
+  digitalWrite(TEST_LED, HIGH);
+  delay(5000);
+  digitalWrite(TEST_LED, LOW);
   delay(5000);
   // Always check for bt messages, then print to the screen
   
   // put your main code here, to run repeatedly:
   // testscrolltext();
-  // if (counter > lastCounter) {
-  //   shift_arr();
-  //   testdrawbitmap();
-  //   lastCounter = counter;
-  // } else if  (counter < lastCounter) {
-  //   shift_arr(false);
-  //   testdrawbitmap();
-  //   lastCounter = counter;
-  // }
+  if (counter > lastCounter) {
+    shift_arr();
+    testdrawbitmap();
+    lastCounter = counter;
+  } else if  (counter < lastCounter) {
+    shift_arr(false);
+    testdrawbitmap();
+    lastCounter = counter;
+  }
 
-  // if (!digitalRead(SEL_C) & millis() - _lastSelectTime > _pauseLength/100) {
-  //   Serial.println("selection");
-  //   _lastSelectTime = millis();
-  // } 
+  if (!digitalRead(SEL_C) & millis() - _lastSelectTime > _pauseLength/100) {
+    Serial.println("selection");
+    _lastSelectTime = millis();
+  } 
 }
