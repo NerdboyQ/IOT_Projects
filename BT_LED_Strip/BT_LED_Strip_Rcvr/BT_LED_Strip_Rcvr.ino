@@ -10,6 +10,8 @@ SoftwareSerial HM10(RX,TX);
 #define NUMPIXELS 300
 #define DELAYVAL 500
 
+#define DFLT_BT_RESP 0x81
+#define CONN_BT_PING 0x7E
 Adafruit_NeoPixel pixels(NUMPIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
 /**
@@ -112,6 +114,20 @@ void setup() {
   pixels.setBrightness(60);
 }
 
+bool newMsgRcvd = false;
+uint32_t newPkt, oldPkt = 0;
+char shift = 24;
+#define PktSize 4
+unsigned char buffer[PktSize];
+char buffer_index;
+
+
+void handlePing() {
+  Serial.println("Handling ping");
+  HM10.write(DFLT_BT_RESP);
+  buffer_index = 0;
+}
+
 uint32_t reverse_pkt(uint32_t raw_data) {
   uint32_t flipped = 0;
   for (char n = 0; n < 32; n+=8){
@@ -122,24 +138,23 @@ uint32_t reverse_pkt(uint32_t raw_data) {
   return flipped;
 }
 
-bool newMsgRcvd = false;
-uint32_t newPkt, oldPkt = 0;
-char shift = 24;
-#define PktSize 4
-unsigned char buffer[PktSize];
-char buffer_index;
+
 void loop() {
   // Always check for bt messages, then print to the screen
   while (HM10.available() ) {
-    buffer[buffer_index] = HM10.read();
-    Serial.print(buffer[buffer_index], HEX);
-    // newPkt = newPkt | (val << shift);
-    buffer_index++;
-    // shift-=8;
-    // newMsgRcvd = true;
+    char bt_byte = HM10.read();
+    if (bt_byte == CONN_BT_PING) handlePing();
+    else {
+      buffer[buffer_index] = bt_byte;
+      Serial.print(buffer[buffer_index], HEX);
+      buffer_index++;
+      newMsgRcvd = true;
+    }
   }
 
   if (buffer_index == PktSize) {
+    // send response
+    HM10.write(DFLT_BT_RESP);
     // newPkt = reverse_pkt(newPkt);
     buffer_index = 0;
     // for (char i = 0; i < PktSize; i++){

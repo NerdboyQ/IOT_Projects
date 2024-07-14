@@ -4,10 +4,15 @@
 #include <Adafruit_SSD1306.h>
 
 #include <SoftwareSerial.h>
-#define TEST_LED 6
-#define RX 10 // Connect to HM10 TX for both AT and normal modes
-#define TX 11  // Connect to HM10 RX for both AT and normal modes
+#define TEST_LED 5
+#define RX 6// Connect to HM10 TX for both AT and normal modes
+#define TX 7  // Connect to HM10 RX for both AT and normal modes
 SoftwareSerial HM10(RX,TX);
+const char* RCVR_CONN_REQ = "AT+CON0035FF0D419B";
+bool activeConnection = false;
+
+#define DFLT_BT_RESP 0x81
+#define CONN_BT_PING 0x7E
 
 // Rotary Encoder Pins
 #define ENC_A 3
@@ -17,6 +22,8 @@ SoftwareSerial HM10(RX,TX);
 unsigned long _lastIncReadTime = micros();
 unsigned long _lastDecReadTime = micros();
 unsigned long _lastSelectTime = micros();
+unsigned long _last_bt_resp = millis();
+const unsigned long _bt_conn_timeout = 10000;
 const uint16_t _pauseLength = 25000;
 
 volatile int8_t counter = 0;
@@ -212,6 +219,8 @@ void printHM10_settings() {
   Serial.write("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 }
 
+
+
 void setup() {
   // Encoder Pins
   pinMode(ENC_A, INPUT_PULLUP);
@@ -240,7 +249,9 @@ void setup() {
     HM10.println("Connect Serial Commnication");
   }
   // printHM10_settings();
-  sendAtCmd("AT+CON0035FF0D419B");
+  // sendAtCmd("AT+CON0035FF0D419B");
+  reconnect();
+  activeConnection = true;
   pinMode(TEST_LED, OUTPUT);
   // digitalWrite(TEST_LED, HIGH);
 
@@ -257,6 +268,20 @@ void setup() {
   // display.clearDisplay();
 
   
+}
+
+void reconnect() {
+  Serial.println("Re-establishing connection to receiver.");
+  // Serial.println(RCVR_CONN_REQ);
+  HM10.write(RCVR_CONN_REQ);
+  delay(2500);
+  statusPing();
+}
+
+void statusPing() {
+  Serial.println("pinging rcvr");
+  HM10.write(CONN_BT_PING);
+  delay(500);
 }
 
 void testscrolltext(void) {
@@ -345,32 +370,43 @@ void testdrawbitmap() {
 int8_t n = 1;
 bool newMsgRcvd = false;
 void loop() {
-  unsigned char pkt[4] = {0x01, 0x02, 0x03, 0x04};
-  HM10.write(pkt, sizeof(pkt));
-  for (char i = 0; i < 4; i++) {
-    Serial.print(pkt[i], HEX);
-  }
-  Serial.print("\n");
-  digitalWrite(TEST_LED, HIGH);
-  delay(5000);
-  digitalWrite(TEST_LED, LOW);
-  delay(5000);
-  // Always check for bt messages, then print to the screen
-  
-  // put your main code here, to run repeatedly:
-  // testscrolltext();
-  if (counter > lastCounter) {
-    shift_arr();
-    testdrawbitmap();
-    lastCounter = counter;
-  } else if  (counter < lastCounter) {
-    shift_arr(false);
-    testdrawbitmap();
-    lastCounter = counter;
+  while (HM10.available()) {
+    _last_bt_resp = millis();
+    uint8_t bt_byte = HM10.read();
+    if (bt_byte == DFLT_BT_RESP) activeConnection = true;
   }
 
-  if (!digitalRead(SEL_C) & millis() - _lastSelectTime > _pauseLength/100) {
-    Serial.println("selection");
-    _lastSelectTime = millis();
-  } 
+  
+  if (millis() - _last_bt_resp > _bt_conn_timeout*2) activeConnection = false;
+  else if (millis() - _last_bt_resp > _bt_conn_timeout) statusPing();
+
+  if(!activeConnection) reconnect();
+  // unsigned char pkt[4] = {0x01, 0x02, 0x03, 0x04};
+  // HM10.write(pkt, sizeof(pkt));
+  // for (char i = 0; i < 4; i++) {
+  //   Serial.print(pkt[i], HEX);
+  // }
+  // Serial.print("\n");
+  // digitalWrite(TEST_LED, HIGH);
+  // delay(5000);
+  // digitalWrite(TEST_LED, LOW);
+  // delay(5000);
+  // // Always check for bt messages, then print to the screen
+  
+  // // put your main code here, to run repeatedly:
+  // // testscrolltext();
+  // if (counter > lastCounter) {
+  //   shift_arr();
+  //   testdrawbitmap();
+  //   lastCounter = counter;
+  // } else if  (counter < lastCounter) {
+  //   shift_arr(false);
+  //   testdrawbitmap();
+  //   lastCounter = counter;
+  // }
+
+  // if (!digitalRead(SEL_C) & millis() - _lastSelectTime > _pauseLength/100) {
+  //   Serial.println("selection");
+  //   _lastSelectTime = millis();
+  // } 
 }
