@@ -5,7 +5,7 @@
 // MAX Value to avoid LED burnout: 210 0xD2
 // Half of the MAX would be: 105 0x69
 #define MAX_LED_INTENSITY 210
-#define COLOR_PALLETE_ARR_SZ 12
+#define COLOR_PALLETE_ARR_SZ 14
 
 
 struct LED_Color {
@@ -18,6 +18,8 @@ struct LED_Color {
     uint8_t get_intensity();
 };
 
+// OFF Predefined LED_Color object
+extern const LED_Color* const OFF;
 // WHITE Predefined LED_Color object
 extern const LED_Color* const WHITE;
 // RED Predefined LED_Color object

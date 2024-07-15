@@ -5,13 +5,14 @@
 #define RX 10 // Connect to HM10 TX for both AT and normal modes
 #define TX 11  // Connect to HM10 RX for both AT and normal modes
 SoftwareSerial HM10(RX,TX);
+#include "bt_led_msgs.h"
+BtPkt INC_BT_PKT;
+BtPkt OUT_BT_PKT;
 
 #define PIXEL_PIN 12
 #define NUMPIXELS 300
 #define DELAYVAL 500
 
-#define DFLT_BT_RESP 0x81
-#define CONN_BT_PING 0x7E
 Adafruit_NeoPixel pixels(NUMPIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
 /**
@@ -95,18 +96,18 @@ void printHM10_settings() {
   sendAtCmd("AT+ALLO1");  // Set Whitelist enabled mode; Enabled (1), Disable (0)
   sendAtCmd("AT+ALLO?");  // Get Whitelist enabled mode; Enabled (1), Disable (0)
   sendAtCmd("AT+AD1B0D2786E300A");  // Set Whitelisted device 1 to B0D2786E300A
-  sendAtCmd("AT+AD2B0D2786E300A");  // Set Whitelisted device 2 to B0D2786E300A
-  sendAtCmd("AT+AD3B0D2786E300A");  // Set Whitelisted device 3 to B0D2786E300A
-  
+  // sendAtCmd("AT+AD2B0D2786E300A");  // Set Whitelisted device 2 to B0D2786E300A
+  // sendAtCmd("AT+AD3B0D2786E300A");  // Set Whitelisted device 3 to B0D2786E300A
+  sendAtCmd("AT+CON0B0D2786E300A");
   Serial.write("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 }
 
 void setup() {
   HM10.begin(9600);
   Serial.begin(9600);
-  while (!Serial) {
-    HM10.println("Connect Serial Commnication");
-  }
+  // while (!Serial) {
+  //   HM10.println("Connect Serial Commnication");
+  // }
   printHM10_settings();
   
   pixels.begin();
@@ -124,7 +125,7 @@ char buffer_index;
 
 void handlePing() {
   Serial.println("Handling ping");
-  HM10.write(DFLT_BT_RESP);
+  HM10.write(_DFLT_BT_RESP);
   buffer_index = 0;
 }
 
@@ -138,15 +139,21 @@ uint32_t reverse_pkt(uint32_t raw_data) {
   return flipped;
 }
 
+void handleDfltColorMsg() {
+  unsigned char intensity = INC_BT_PKT.byte1;
+  unsigned char pattern = INC_BT_PKT.byte2;
+  set_strip(COLOR_PALLETE[INC_BT_PKT.byte3]);
+}
+
 
 void loop() {
   // Always check for bt messages, then print to the screen
   while (HM10.available() ) {
     char bt_byte = HM10.read();
-    if (bt_byte == CONN_BT_PING) handlePing();
+    if (bt_byte == _DFLT_BT_PING) handlePing();
     else {
       buffer[buffer_index] = bt_byte;
-      Serial.print(buffer[buffer_index], HEX);
+      Serial.println(buffer[buffer_index], HEX);
       buffer_index++;
       newMsgRcvd = true;
     }
@@ -154,7 +161,21 @@ void loop() {
 
   if (buffer_index == PktSize) {
     // send response
-    HM10.write(DFLT_BT_RESP);
+    HM10.write(_DFLT_BT_RESP);
+    // Serial.println(buffer[0]);
+    INC_BT_PKT.byte0 = buffer[0];
+    INC_BT_PKT.byte1 = buffer[1];
+    INC_BT_PKT.byte2 = buffer[2];
+    INC_BT_PKT.byte3 = buffer[3];
+    Serial.print("Byte 0: ");
+    Serial.print(buffer[0], HEX);
+    Serial.print(", Byte 1: ");
+    Serial.print(buffer[1], HEX);
+    Serial.print(", Byte 2: ");
+    Serial.print(buffer[2], HEX);
+    Serial.print(", Byte 3: ");
+    Serial.println(buffer[3], HEX);
+    if (INC_BT_PKT.byte0 == _DFLT_BT_COLR) handleDfltColorMsg();
     // newPkt = reverse_pkt(newPkt);
     buffer_index = 0;
     // for (char i = 0; i < PktSize; i++){
@@ -168,9 +189,9 @@ void loop() {
     newPkt = 0; // reset newPkt
     shift = 24; // reset shift
     Serial.write("\n~\n");
-    set_strip(CYAN);
+    // set_strip(CYAN);
     delay(1000);
-    set_strip(WHITE);
+    // set_strip(WHITE);
     newMsgRcvd = false;
   }
   // adjust_intensity(100, 1);
