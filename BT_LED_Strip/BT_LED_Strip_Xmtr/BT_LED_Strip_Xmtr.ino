@@ -8,11 +8,15 @@
 #define RX 6// Connect to HM10 TX for both AT and normal modes
 #define TX 7  // Connect to HM10 RX for both AT and normal modes
 SoftwareSerial HM10(RX,TX);
+
+#include "bt_led_msgs.h"
+BtPkt INC_BT_PKT;
+BtPkt OUT_BT_PKT;
 const char* RCVR_CONN_REQ = "AT+CON0035FF0D419B";
+unsigned long _last_bt_resp = millis();
+const unsigned long _bt_conn_timeout = 100000;
 bool activeConnection = false;
 
-#define DFLT_BT_RESP 0x81
-#define CONN_BT_PING 0x7E
 
 // Rotary Encoder Pins
 #define ENC_A 3
@@ -22,8 +26,6 @@ bool activeConnection = false;
 unsigned long _lastIncReadTime = micros();
 unsigned long _lastDecReadTime = micros();
 unsigned long _lastSelectTime = micros();
-unsigned long _last_bt_resp = millis();
-const unsigned long _bt_conn_timeout = 10000;
 const uint16_t _pauseLength = 25000;
 
 volatile int8_t counter = 0;
@@ -220,56 +222,6 @@ void printHM10_settings() {
 }
 
 
-
-void setup() {
-  // Encoder Pins
-  pinMode(ENC_A, INPUT_PULLUP);
-  pinMode(ENC_B, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(ENC_A), read_encoder, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENC_B), read_encoder, CHANGE);
-
-  pinMode(SEL_C, INPUT_PULLUP);
-
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-    Serial.println(F("SSD1306 allocation failed"));
-    for(;;);
-  }
-  display.display();
-  delay(2000); // Pause for 2 seconds
-
-  // Clear the buffer
-  display.clearDisplay();
-  testdrawbitmap();
-  delay(500);
-
-  HM10.begin(9600);
-  Serial.begin(9600);
-  while (!Serial) {
-    HM10.println("Connect Serial Commnication");
-  }
-  // printHM10_settings();
-  // sendAtCmd("AT+CON0035FF0D419B");
-  reconnect();
-  activeConnection = true;
-  pinMode(TEST_LED, OUTPUT);
-  // digitalWrite(TEST_LED, HIGH);
-
-  
-
-  
-
-  // // Show initial display buffer contents on the screen --
-  // // the library initializes this with an Adafruit splash screen.
-  // display.display();
-  // delay(2000); // Pause for 2 seconds
-
-  // // Clear the buffer
-  // display.clearDisplay();
-
-  
-}
-
 void reconnect() {
   Serial.println("Re-establishing connection to receiver.");
   // Serial.println(RCVR_CONN_REQ);
@@ -280,9 +232,17 @@ void reconnect() {
 
 void statusPing() {
   Serial.println("pinging rcvr");
-  HM10.write(CONN_BT_PING);
+  HM10.write(_DFLT_BT_PING);
   delay(500);
 }
+
+void handlePingResp() {
+  Serial.println("Received Ping Response");
+  _last_bt_resp = millis();
+  activeConnection = true;
+}
+
+
 
 void testscrolltext(void) {
   display.clearDisplay();
@@ -366,6 +326,67 @@ void testdrawbitmap() {
   display.display();
 }
 
+void setup() {
+  // Encoder Pins
+  pinMode(ENC_A, INPUT_PULLUP);
+  pinMode(ENC_B, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(ENC_A), read_encoder, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENC_B), read_encoder, CHANGE);
+
+  pinMode(SEL_C, INPUT_PULLUP);
+
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);
+  }
+  display.display();
+  delay(2000); // Pause for 2 seconds
+
+  // Clear the buffer
+  display.clearDisplay();
+  testdrawbitmap();
+  delay(500);
+
+  HM10.begin(9600);
+  Serial.begin(9600);
+  while (!Serial) {
+    Serial.println("Connect Serial Commnication");
+  }
+  Serial.println("Booting...");
+  // printHM10_settings();
+  HM10.write("AT");
+  delay(500);
+  HM10.write(RCVR_CONN_REQ);
+  delay(500);
+
+  
+  // reconnect();
+  activeConnection = true;
+  _last_bt_resp = millis();
+  pinMode(TEST_LED, OUTPUT);
+  // digitalWrite(TEST_LED, HIGH);
+  // // Show initial display buffer contents on the screen --
+  // // the library initializes this with an Adafruit splash screen.
+  // display.display();
+  // delay(2000); // Pause for 2 seconds
+
+  // // Clear the buffer
+  // display.clearDisplay();
+
+  
+}
+
+uint8_t c = 0x01;
+void testFxn() {
+  Serial.println("Color Msg");
+  HM10.write(_DFLT_BT_COLR);
+  HM10.write(0xFF);
+  HM10.write(0x01);
+  HM10.write(c);
+  c = (c + 1) % 14;
+  delay(500);
+}
 
 int8_t n = 1;
 bool newMsgRcvd = false;
@@ -373,14 +394,17 @@ void loop() {
   while (HM10.available()) {
     _last_bt_resp = millis();
     uint8_t bt_byte = HM10.read();
-    if (bt_byte == DFLT_BT_RESP) activeConnection = true;
+    if (bt_byte == _DFLT_BT_RESP) handlePingResp();
   }
 
   
-  if (millis() - _last_bt_resp > _bt_conn_timeout*2) activeConnection = false;
-  else if (millis() - _last_bt_resp > _bt_conn_timeout) statusPing();
-
+  if (millis() - _last_bt_resp > _bt_conn_timeout) activeConnection = false;
+  else if (millis() - _last_bt_resp > _bt_conn_timeout/2) statusPing();
+  
   if(!activeConnection) reconnect();
+  else {
+    // sendDftColor();
+  }
   // unsigned char pkt[4] = {0x01, 0x02, 0x03, 0x04};
   // HM10.write(pkt, sizeof(pkt));
   // for (char i = 0; i < 4; i++) {
@@ -395,18 +419,20 @@ void loop() {
   
   // // put your main code here, to run repeatedly:
   // // testscrolltext();
-  // if (counter > lastCounter) {
-  //   shift_arr();
-  //   testdrawbitmap();
-  //   lastCounter = counter;
-  // } else if  (counter < lastCounter) {
-  //   shift_arr(false);
-  //   testdrawbitmap();
-  //   lastCounter = counter;
-  // }
+  if (counter > lastCounter) {
+    shift_arr();
+    testdrawbitmap();
+    lastCounter = counter;
+  } else if  (counter < lastCounter) {
+    shift_arr(false);
+    testdrawbitmap();
+    lastCounter = counter;
+  }
 
-  // if (!digitalRead(SEL_C) & millis() - _lastSelectTime > _pauseLength/100) {
-  //   Serial.println("selection");
-  //   _lastSelectTime = millis();
-  // } 
+  if (!digitalRead(SEL_C) & millis() - _lastSelectTime > _pauseLength/100) {
+    Serial.println("selection");
+    testFxn();
+    _lastSelectTime = millis();
+
+  } 
 }
