@@ -10,9 +10,6 @@
 SoftwareSerial HM10(RX,TX);
 
 #include "control_menu.h"
-MENU_STATE CURRENT_MENU_STATE = S_MAIN;
-MAIN_MENU_OPT MAIN_MENU_SEL = M_OPT_COLOR;
-
 #include "bt_led_msgs.h"
 
 // Rotary Encoder Pins
@@ -21,13 +18,13 @@ MAIN_MENU_OPT MAIN_MENU_SEL = M_OPT_COLOR;
 #define SEL_C 4
 
 unsigned long _lastIncReadTime = micros();
-unsigned long _lastDecReadTime = micros();
 unsigned long _lastSelectTime = micros();
 const uint16_t _pauseLength = 25000;
 
 volatile int8_t counter = 0;
 volatile int8_t lastCounter = counter;
-// Interrupt_Routine to process encode transitions
+
+// Interrupt_Service_Routine to process encode transitions
 void read_encoder() {
   static uint8_t old_AB = 3;  // Lookup Table Index
   static int8_t encval = 0;   // encode value
@@ -70,58 +67,121 @@ void read_encoder() {
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-#define LOGO_HEIGHT   16
-#define LOGO_WIDTH    16
-static const unsigned char PROGMEM logo_bmp[] =
-{ 0b00000000, 0b11000000,
-  0b00000001, 0b11000000,
-  0b00000001, 0b11000000,
-  0b00000011, 0b11100000,
-  0b11110011, 0b11100000,
-  0b11111110, 0b11111000,
-  0b01111110, 0b11111111,
-  0b00110011, 0b10011111,
-  0b00011111, 0b11111100,
-  0b00001101, 0b01110000,
-  0b00011011, 0b10100000,
-  0b00111111, 0b11100000,
-  0b00111111, 0b11110000,
-  0b01111100, 0b11110000,
-  0b01110000, 0b01110000,
-  0b00000000, 0b00110000 };
+/**
+* Shifts the display mode based on the
+* current MENU Index
+*/
+void update_display_mode(){
+  Serial.print("Menu IDX: ");
+  Serial.println(MENU_IDX);
+  if (!MENU_IDX) CURRENT_MENU_DSP_STATE = DSP_COLOR;
+  else if (MENU_IDX == 1) CURRENT_MENU_DSP_STATE = DSP_PATTERN;
+  else if (MENU_IDX == 2) CURRENT_MENU_DSP_STATE = DSP_BRIGHTNESS;
+}
 
-
-
-int8_t y_pos[] = {0,24,48};
-
-String items[] = {
-  "Color",
-  "Pattern",
-  "Brightness",
-};
-
-
+/**
+* Updates the MENU or Selection INDEX based on
+* the last encoder rotation transition
+*
+*/
 void shift_arr(bool shiftUp=true) {
-  int8_t frst = 0;
-  int8_t last = 2;
   int8_t incr = 1;
   if (shiftUp) { 
-    frst = 2;
-    last = 0;
     incr = -1;
-    MAIN_MENU_SEL = (MAIN_MENU_SEL + 1) % 3;
-   } else {
-    MAIN_MENU_SEL = (MAIN_MENU_SEL - 1) % 3;
-   }
+   } 
+  switch(CURRENT_MENU_MODE){
+    case NAVIGATION:
+      MENU_IDX_LAST = MENU_IDX;
+      MENU_IDX = (MENU_IDX+ incr) % MENU_OPT_N;
+      // C follows the sign as a rule, so
+      // we account for the negative values
+      if (MENU_IDX <0) MENU_IDX+=MENU_OPT_N;
+      MENU_TITLE = menu_titles[MENU_IDX];
+      break;
+    case SELECT:
+      if (MENU_IDX < 2) {
+          SELECTION_OPT_LAST = SELECTION_OPT_IDX;
+          switch(CURRENT_MENU_DSP_STATE){
+            case DSP_COLOR:
+              SELECTION_OPT_IDX = (SELECTION_OPT_IDX+ incr) % COLOR_OPT_N;
+              // C follows the sign as a rule, so
+              // we account for the negative values
+              if (SELECTION_OPT_IDX<0) SELECTION_OPT_IDX+=COLOR_OPT_N;
+              OPT_SEL = color_opts[SELECTION_OPT_IDX];
+              break;
+            case DSP_PATTERN:
+              SELECTION_OPT_IDX = (SELECTION_OPT_IDX+ incr) % PATTERN_OPT_N;
+              // C follows the sign as a rule, so
+              // we account for the negative values
+              if (SELECTION_OPT_IDX<0) SELECTION_OPT_IDX+=PATTERN_OPT_N;
+              OPT_SEL = pattern_opts[SELECTION_OPT_IDX];
+              break;
+          }
+          
 
-  for (int8_t i = frst; i != last; i+=incr) {
-    int8_t x = y_pos[i];
-    y_pos[i] = y_pos[i+incr];
-    y_pos[i+incr] = x;
+          Serial.println("Show Options Menu");
+          option_selection_update();
+      } else {
+        Serial.println("Show Brightness");
+      }
+      break;
   }
+  
 } 
 
+/**
+* Updates the displayed menu title
+*/
+void update_menu_title(){
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);        // Draw white text
+  display.setCursor(0,0);
+  display.setTextSize(2);
+  char buffer[MAX_STR_SZ];
+  strcpy_P(buffer, MENU_TITLE);
+  display.println(buffer);
+  display.display();
+  delay(5);
+}
 
+/**
+* Updates the displayed Selection text
+*/
+void option_selection_update(){
+  display.clearDisplay();
+  update_menu_title();
+  display.setTextColor(SSD1306_WHITE);        // Draw white text
+  display.setCursor(0,18);
+  display.setTextSize(2);
+  char buffer[MAX_STR_SZ];
+  if (CURRENT_MENU_DSP_STATE == DSP_COLOR) strcpy_P(buffer, color_opts[SELECTION_OPT_IDX]);
+  else if (CURRENT_MENU_DSP_STATE == DSP_PATTERN) strcpy_P(buffer, pattern_opts[SELECTION_OPT_IDX]);
+  display.println(buffer);
+  display.display();
+  delay(5);
+}
+
+/**
+* Changes the Selected value based on the current
+* Menu & Selection index
+*/
+void handle_selection() {
+  Serial.print("Currently in Selection Mode for ");
+  char buffer[MAX_STR_SZ];
+  strcpy_P(buffer, OPT_SEL);
+  Serial.println((String)buffer);
+  if ((CURRENT_MENU_DSP_STATE == DSP_COLOR & SELECTION_OPT_IDX == COLOR_OPT_N-1) || 
+      (CURRENT_MENU_DSP_STATE == DSP_PATTERN & SELECTION_OPT_IDX == PATTERN_OPT_N-1)) {
+    Serial.println("CANCELING");
+    CURRENT_MENU_MODE = NAVIGATION;
+    SELECTION_OPT_IDX=0;
+    update_menu_title();
+  }
+}
+
+/**
+* Sets up the device when booted
+*/
 void setup() {
   
   Serial.begin(9600);
@@ -134,9 +194,7 @@ void setup() {
   delay(2000); // Pause for 2 seconds
 
   // Clear the buffer
-  display.clearDisplay();
-  testdrawbitmap();
-  delay(500);
+  update_menu_title();
 
   // Encoder Pins
   pinMode(ENC_A, INPUT_PULLUP);
@@ -145,53 +203,43 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(ENC_B), read_encoder, CHANGE);
 
   pinMode(SEL_C, INPUT_PULLUP);
-
   
 }
-void testdrawbitmap() {
-  display.clearDisplay();
-  display.drawBitmap(
-    3,
-    y_pos[0],
-    led_color_icon, 16, 16, 1);
-  display.setTextSize(1.5);             // Normal 1:1 pixel scale
-  display.setTextColor(SSD1306_WHITE);        // Draw white text
-  display.setCursor(29,y_pos[0]+2);             // Start at top-left corner
-  display.println(items[0]);
 
-  display.drawBitmap(
-    3,
-    y_pos[1],
-    led_pattern_icon, 16, 16, 1);
-  
-  display.setCursor(29,y_pos[1]+2);             // Start at top-left corner
-  display.println(items[1]);
-
-  display.drawBitmap(
-    3,
-    y_pos[2],
-    led_brightness_icon, 16, 16, 1);
-  display.setCursor(29,y_pos[2]+2);             // Start at top-left corner
-  display.println(items[2]);
-
-  display.display();
-}
+/**
+* Main Loop
+*/
 void loop() {
+  if (MENU_IDX != MENU_IDX_LAST){
+    MENU_IDX_LAST = MENU_IDX;
+    update_menu_title();
+    update_display_mode();
+  }
+  if (CURRENT_MENU_MODE == NAVIGATION & SELECTION_OPT_IDX != SELECTION_OPT_LAST){
+    SELECTION_OPT_LAST = SELECTION_OPT_IDX;
+    option_selection_update();
+  }
   if (counter > lastCounter) {
     shift_arr();
-    testdrawbitmap();
     lastCounter = counter;
   } else if  (counter < lastCounter) {
     shift_arr(false);
-    testdrawbitmap();
     lastCounter = counter;
   }
 
   if (!digitalRead(SEL_C) & millis() - _lastSelectTime > _pauseLength/100) {
     Serial.println("selection");
-    // Serial.println(MENU_OPT_TITLES[MAIN_MENU_SEL]);
-    // testFxn();
+    if (CURRENT_MENU_MODE == SELECT){
+      handle_selection();
+    } else if (CURRENT_MENU_MODE == NAVIGATION){
+      Serial.print("Starting menu selection for: ");
+      Serial.println(MENU_TITLE);
+      // Display menu options when entering SELECT mode
+      CURRENT_MENU_MODE = SELECT;
+      SELECTION_OPT_IDX = 0;
+      option_selection_update();
+    }
     _lastSelectTime = millis();
-
+    
   } 
 }

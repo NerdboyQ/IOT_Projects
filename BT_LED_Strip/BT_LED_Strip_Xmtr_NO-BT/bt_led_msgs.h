@@ -1,3 +1,4 @@
+#include <stdint.h>
 #ifndef __BT_LED_MSGs__
 #define __BT_LED_MSGs__
 
@@ -31,32 +32,12 @@ typedef enum {
   _ORANGE = 0x0D,
 }DfltColrByte;
 
-typedef struct{
-  DfltColrByte key;
-  String text;
-}ColorPair;
 
-ColorPair DFLT_COLOR_MAP[] = {
-  ColorPair{_OFF, "OFF"},
-  ColorPair{_WHITE, "WHITE"},
-  ColorPair{_RED, "RED"},
-  ColorPair{_ROSE, "ROSE"},
-  ColorPair{_MAGENTA, "MAGENTA"},
-  ColorPair{_VIOLET, "VIOLET"},
-  ColorPair{_BLUE, "BLUE"},
-  ColorPair{_AZURE, "AZURE"},
-  ColorPair{_CYAN, "CYAN"},
-  ColorPair{_SPRING_GREEN, "SPRING GREEN"},
-  ColorPair{_GREEN, "GREEN"},
-  ColorPair{_CHARTREUSE, "CHARTREUSE"},
-  ColorPair{_YELLOW, "YELLOW"},
-  ColorPair{_ORANGE, "ORANGE"},
-};
-
-typedef struct {
-  unsigned char byte0;
-  unsigned char byte1;
-  unsigned char byte2;
-  unsigned char byte3;
+typedef union {
+  unsigned char byte0:8;
+  uint_fast32_t byte1:8;
+  unsigned char byte2:8;
+  uint_fast32_t byte3:8;
 }BtPkt;
+
 #endif
