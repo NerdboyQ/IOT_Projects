@@ -123,6 +123,9 @@ void shift_arr(bool shiftUp=true) {
           option_selection_update();
       } else {
         Serial.println("Show Brightness");
+        incr*=-10;
+        if (LED_BRIGHTNESS >=0 && incr < 0) LED_BRIGHTNESS+=incr;
+        else if (LED_BRIGHTNESS < 100 && incr > 0) LED_BRIGHTNESS+=incr;
       }
       break;
   }
@@ -150,15 +153,28 @@ void update_menu_title(){
 void option_selection_update(){
   display.clearDisplay();
   update_menu_title();
-  display.setTextColor(SSD1306_WHITE);        // Draw white text
-  display.setCursor(0,18);
-  display.setTextSize(2);
-  char buffer[MAX_STR_SZ];
-  if (CURRENT_MENU_DSP_STATE == DSP_COLOR) strcpy_P(buffer, color_opts[SELECTION_OPT_IDX]);
-  else if (CURRENT_MENU_DSP_STATE == DSP_PATTERN) strcpy_P(buffer, pattern_opts[SELECTION_OPT_IDX]);
-  display.println(buffer);
+  if (CURRENT_MENU_DSP_STATE == DSP_BRIGHTNESS){
+    // TODO: implement brightness indicator
+  } else {
+    display.setTextColor(SSD1306_WHITE);        // Draw white text
+    display.setCursor(0,18);
+    display.setTextSize(2);
+    char buffer[MAX_STR_SZ];
+    if (CURRENT_MENU_DSP_STATE == DSP_COLOR) strcpy_P(buffer, color_opts[SELECTION_OPT_IDX]);
+    else if (CURRENT_MENU_DSP_STATE == DSP_PATTERN) strcpy_P(buffer, pattern_opts[SELECTION_OPT_IDX]);
+    display.println(buffer);
+    display.display();
+    delay(5);
+  }
+}
+
+void draw_brightness_bar() {
+  update_menu_title();
+  // draw box outline
+  display.drawRect(2, 24, SCREEN_WIDTH-4, SCREEN_HEIGHT/3, SSD1306_WHITE);
+  // draw level inside
+  display.fillRect(8, 28, (SCREEN_WIDTH-16)*((float)LED_BRIGHTNESS/100), (SCREEN_HEIGHT/3)-8, SSD1306_INVERSE);
   display.display();
-  delay(5);
 }
 
 /**
@@ -167,15 +183,20 @@ void option_selection_update(){
 */
 void handle_selection() {
   Serial.print("Currently in Selection Mode for ");
-  char buffer[MAX_STR_SZ];
-  strcpy_P(buffer, OPT_SEL);
-  Serial.println((String)buffer);
-  if ((CURRENT_MENU_DSP_STATE == DSP_COLOR & SELECTION_OPT_IDX == COLOR_OPT_N-1) || 
-      (CURRENT_MENU_DSP_STATE == DSP_PATTERN & SELECTION_OPT_IDX == PATTERN_OPT_N-1)) {
-    Serial.println("CANCELING");
-    CURRENT_MENU_MODE = NAVIGATION;
-    SELECTION_OPT_IDX=0;
-    update_menu_title();
+  if (MENU_IDX < 2){
+    char buffer[MAX_STR_SZ];
+    strcpy_P(buffer, OPT_SEL);
+    Serial.println((String)buffer);
+    if ((CURRENT_MENU_DSP_STATE == DSP_COLOR & SELECTION_OPT_IDX == COLOR_OPT_N-1) || 
+        (CURRENT_MENU_DSP_STATE == DSP_PATTERN & SELECTION_OPT_IDX == PATTERN_OPT_N-1)) {
+      Serial.println("CANCELING");
+      CURRENT_MENU_MODE = NAVIGATION;
+      SELECTION_OPT_IDX=0;
+      update_menu_title();
+    }
+  } else {
+    // TODO : Draw bar
+    draw_brightness_bar();
   }
 }
 
@@ -219,6 +240,11 @@ void loop() {
     SELECTION_OPT_LAST = SELECTION_OPT_IDX;
     option_selection_update();
   }
+  if (LED_BRIGHTNESS != LED_BRIGHTNESS_LAST) {
+    LED_BRIGHTNESS_LAST = LED_BRIGHTNESS;
+    draw_brightness_bar();
+  }
+
   if (counter > lastCounter) {
     shift_arr();
     lastCounter = counter;
@@ -230,14 +256,25 @@ void loop() {
   if (!digitalRead(SEL_C) & millis() - _lastSelectTime > _pauseLength/100) {
     Serial.println("selection");
     if (CURRENT_MENU_MODE == SELECT){
-      handle_selection();
+      if (MENU_IDX < 2) handle_selection();
+      else {
+        Serial.println("CANCELING BRIGHTNESS");
+        CURRENT_MENU_MODE = NAVIGATION;
+        update_menu_title();
+      }
     } else if (CURRENT_MENU_MODE == NAVIGATION){
       Serial.print("Starting menu selection for: ");
       Serial.println(MENU_TITLE);
-      // Display menu options when entering SELECT mode
       CURRENT_MENU_MODE = SELECT;
-      SELECTION_OPT_IDX = 0;
-      option_selection_update();
+
+      if (MENU_IDX < 2) {
+        // Display menu options when entering SELECT mode
+        SELECTION_OPT_IDX = 0;
+        option_selection_update();
+      } else {
+        LED_BRIGHTNESS = 10;
+        handle_selection();
+      }
     }
     _lastSelectTime = millis();
     
