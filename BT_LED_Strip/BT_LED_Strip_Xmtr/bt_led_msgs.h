@@ -1,20 +1,30 @@
+#include <avr/pgmspace.h>
+#include <stdint.h>
 #ifndef __BT_LED_MSGs__
 #define __BT_LED_MSGs__
 
-enum Patterns {
+#define CONN_REQ_SZ 20
+// Dedicated BLE HM10 module
+// change for your specific module
+const char RCVR_CONN_REQ[CONN_REQ_SZ] PROGMEM = "AT+CON0035FF0D419B";
+const unsigned long _bt_conn_timeout PROGMEM = 100000;
+bool activeConnection = false;
+unsigned long _last_bt_resp = 0;
+
+typedef enum {
   _SOLID = 0x00,
   _PULSE = 0x01,
   _FADER = 0x02,
   _RNBOW = 0x03,
-};
+}Patterns;
 
-enum HeadByte {
+typedef enum {
   _DFLT_BT_PING = 0x81,
   _DFLT_BT_RESP = 0x7E,
   _DFLT_BT_COLR = 0x65,
-};
+}HeadByte;
 
-enum DfltColrByte {
+typedef enum {
   _OFF = 0x00,
   _WHITE = 0x01,
   _RED = 0x02,
@@ -29,12 +39,17 @@ enum DfltColrByte {
   _CHARTREUSE = 0x0B,
   _YELLOW = 0x0C,
   _ORANGE = 0x0D,
-};
+}DfltColrByte;
 
-struct BtPkt {
-  unsigned char byte0;
-  unsigned char byte1;
-  unsigned char byte2;
-  unsigned char byte3;
-};
+
+typedef union {
+  unsigned char byte0:8;
+  unsigned char byte1:8;
+  unsigned char byte2:8;
+  unsigned char byte3:8;
+}BtPkt;
+
+BtPkt *INC_BT_PKT;
+BtPkt *OUT_BT_PKT;
+
 #endif
