@@ -111,7 +111,7 @@ void setup() {
   printHM10_settings();
   
   pixels.begin();
-  set_strip(VIOLET);
+  set_strip(COLOR_PALLETE[5]);
   pixels.setBrightness(60);
 }
 
