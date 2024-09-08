@@ -20,16 +20,16 @@ Adafruit_NeoPixel pixels(NUMPIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 *
 * @led_color : LED_Color object
 */
-void set_strip(LED_Color* led_color) {
-  Serial.print("r: ");
-  Serial.print(led_color->r+0);
-  Serial.print(", g: ");
-  Serial.print(led_color->g+0);
-  Serial.print(", b: ");
-  Serial.println(led_color->b+0);
+void set_strip(LED_Color led_color) {
+  Serial.print(F(", r: "));
+  Serial.print(led_color.r+0);
+  Serial.print(F(", g: "));
+  Serial.print(led_color.g+0);
+  Serial.print(F(", b: "));
+  Serial.println(led_color.b+0);
 
   for(int i=0; i<NUMPIXELS; i++) {
-    pixels.setPixelColor(i, pixels.Color(led_color->r, led_color->g, led_color->b));
+    pixels.setPixelColor(i, pixels.Color(led_color.r, led_color.g, led_color.b));
   }
     pixels.show();   // Send the updated pixel colors to the hardware.
 }
@@ -112,7 +112,7 @@ void setup() {
   
   pixels.begin();
   set_strip(COLOR_PALLETE[5]);
-  pixels.setBrightness(60);
+  pixels.setBrightness(20);
 }
 
 bool newMsgRcvd = false;
@@ -167,14 +167,14 @@ void loop() {
     INC_BT_PKT.byte1 = buffer[1];
     INC_BT_PKT.byte2 = buffer[2];
     INC_BT_PKT.byte3 = buffer[3];
-    Serial.print("Byte 0: ");
-    Serial.print(buffer[0], HEX);
-    Serial.print(", Byte 1: ");
-    Serial.print(buffer[1], HEX);
-    Serial.print(", Byte 2: ");
-    Serial.print(buffer[2], HEX);
-    Serial.print(", Byte 3: ");
-    Serial.println(buffer[3], HEX);
+    Serial.print(F("Byte 0: "));
+    Serial.print(OUT_BT_PKT.byte0, HEX);
+    Serial.print(F(", Byte 1: "));
+    Serial.print(OUT_BT_PKT.byte1, HEX);
+    Serial.print(F(", Byte 2: "));
+    Serial.print(OUT_BT_PKT.byte2, HEX);
+    Serial.print(F(", Byte 3: "));
+    Serial.println(OUT_BT_PKT.byte3, HEX);
     if (INC_BT_PKT.byte0 == _DFLT_BT_COLR) handleDfltColorMsg();
     // newPkt = reverse_pkt(newPkt);
     buffer_index = 0;

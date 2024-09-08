@@ -31,7 +31,7 @@ typedef enum {
   _ORANGE = 0x0D,
 }DfltColrByte;
 
-typedef union {
+typedef struct {
   unsigned char byte0:8;
   unsigned char byte1:8;
   unsigned char byte2:8;
