@@ -111,18 +111,18 @@ int8_t incr;
 
 void send_bt_msg() {
   Serial.println(F("Color Msg"));
-  HM10.write(OUT_BT_PKT->byte0);
-  HM10.write(OUT_BT_PKT->byte1);
-  HM10.write(OUT_BT_PKT->byte2);
-  HM10.write(OUT_BT_PKT->byte3);
+  HM10.write(OUT_BT_PKT.byte0);
+  HM10.write(OUT_BT_PKT.byte1);
+  HM10.write(OUT_BT_PKT.byte2);
+  HM10.write(OUT_BT_PKT.byte3);
   Serial.print(F("Byte 0: "));
-  Serial.print(buffer[0], HEX);
+  Serial.print(OUT_BT_PKT.byte0, HEX);
   Serial.print(F(", Byte 1: "));
-  Serial.print(buffer[1], HEX);
+  Serial.print(OUT_BT_PKT.byte1, HEX);
   Serial.print(F(", Byte 2: "));
-  Serial.print(buffer[2], HEX);
+  Serial.print(OUT_BT_PKT.byte2, HEX);
   Serial.print(F(", Byte 3: "));
-  Serial.println(buffer[3], HEX);
+  Serial.println(OUT_BT_PKT.byte3, HEX);
   // c = (c + 1) % 14;
   delay(500);
 }
@@ -223,6 +223,7 @@ void shift_arr(bool shiftUp=true) {
         incr*=-10;
         if (LED_BRIGHTNESS >=0 && incr < 0) LED_BRIGHTNESS+=incr;
         else if (LED_BRIGHTNESS < 100 && incr > 0) LED_BRIGHTNESS+=incr;
+        OUT_BT_PKT.byte2 = LED_BRIGHTNESS;
       }
       break;
   }
@@ -260,6 +261,7 @@ void option_selection_update(){
     // char buffer[MAX_STR_SZ];
     if (CURRENT_MENU_DSP_STATE == DSP_COLOR) strcpy_P(buffer, color_opts[SELECTION_OPT_IDX]);
     else if (CURRENT_MENU_DSP_STATE == DSP_PATTERN) strcpy_P(buffer, pattern_opts[SELECTION_OPT_IDX]);
+    
     display.println(buffer);
     display.display();
     delay(5);
@@ -292,10 +294,11 @@ void handle_selection() {
       SELECTION_OPT_IDX=0;
       update_menu_title();
     } else if(CURRENT_MENU_DSP_STATE == DSP_COLOR){
-      OUT_BT_PKT->byte3 = (uint8_t)SELECTION_OPT_IDX;
+      OUT_BT_PKT.byte3 = (uint8_t)SELECTION_OPT_IDX;
       send_bt_msg();
     } else if (CURRENT_MENU_DSP_STATE == DSP_PATTERN) {
-      OUT_BT_PKT->byte3 = (uint8_t)SELECTION_OPT_IDX;
+      OUT_BT_PKT.byte1 = (uint8_t)SELECTION_OPT_IDX;
+      send_bt_msg();
     }
   } else {
     draw_brightness_bar();
@@ -331,6 +334,7 @@ void menu_ctrl_logic(){
       if (MENU_IDX < 2) handle_selection();
       else {
         Serial.println(F("CANCELING BRIGHTNESS"));
+        send_bt_msg();
         CURRENT_MENU_MODE = NAVIGATION;
         update_menu_title();
       }
@@ -394,10 +398,6 @@ void setup() {
   pinMode(TEST_LED, OUTPUT);
 
   update_menu_title();
-  OUT_BT_PKT->byte0 = _DFLT_BT_COLR;
-  OUT_BT_PKT->byte1 = 0xC8; // 200
-  OUT_BT_PKT->byte2 = 0xFF;
-  OUT_BT_PKT->byte3 = _VIOLET;
   // printHM10_settings();
   
   // digitalWrite(TEST_LED, HIGH);

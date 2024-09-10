@@ -41,15 +41,22 @@ typedef enum {
   _ORANGE = 0x0D,
 }DfltColrByte;
 
-
-typedef union {
+/**
+* BT Packet Data Structure
+*/
+typedef struct {
+  // Byte 0 : header byte, for message type
   unsigned char byte0:8;
+  // Byte 1 : LED Pattern
   unsigned char byte1:8;
+  // Byte 2 : LED Brightness
   unsigned char byte2:8;
+  // Byte 3 : LED Color
   unsigned char byte3:8;
 }BtPkt;
 
-BtPkt *INC_BT_PKT;
-BtPkt *OUT_BT_PKT;
+BtPkt INC_BT_PKT;
+
+BtPkt OUT_BT_PKT = {_DFLT_BT_COLR, _SOLID, 0x64, _WHITE};
 
 #endif
