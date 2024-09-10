@@ -30,6 +30,7 @@ const LED_Color CHARTREUSE {0x64,0x69,0xD2,0x00};
 const LED_Color YELLOW {0x64,0xD2,0xD2,0x00};
 const LED_Color ORANGE {0x64,0xD2,0x69,0x00};
 
+// Array of all Predefined LED_Color objects, 12 in total
 const LED_Color COLOR_PALLETE[COLOR_PALLETE_ARR_SZ] = {
   OFF,
   WHITE,
@@ -47,5 +48,6 @@ const LED_Color COLOR_PALLETE[COLOR_PALLETE_ARR_SZ] = {
   ORANGE
 };
 
-// Array of all Predefined LED_Color objects, 12 in total
+
+
 #endif 
