@@ -122,6 +122,7 @@ void flushHM10Serial() {
 }
 
 void send_bt_msg() {
+  OUT_BT_PKT.flds.byte2 = LED_BRIGHTNESS;
   Serial.println(F("Color Msg"));
   HM10.write(OUT_BT_PKT.flds.byte0);
   HM10.write(OUT_BT_PKT.flds.byte1);
@@ -246,7 +247,7 @@ void shift_arr(bool shiftUp=true) {
         incr*=-10;
         if (LED_BRIGHTNESS >=0 && incr < 0) LED_BRIGHTNESS+=incr;
         else if (LED_BRIGHTNESS < 100 && incr > 0) LED_BRIGHTNESS+=incr;
-        OUT_BT_PKT.flds.byte2 = LED_BRIGHTNESS;
+        draw_brightness_bar();
       }
       break;
   }
@@ -291,12 +292,19 @@ void option_selection_update(){
   }
 }
 
+/**
+* Draws/Rerdraws brightness bar with
+* current brightness option 
+*/
 void draw_brightness_bar() {
   update_menu_title();
   // draw box outline
   display.drawRect(2, 24, SCREEN_WIDTH-4, SCREEN_HEIGHT/3, SSD1306_WHITE);
   // draw level inside
   display.fillRect(8, 28, (SCREEN_WIDTH-16)*((float)LED_BRIGHTNESS/100), (SCREEN_HEIGHT/3)-8, SSD1306_INVERSE);
+  Serial.print(F("LED_BRIGHTNESS: "));
+  Serial.print(LED_BRIGHTNESS);
+  Serial.println(F("%"));
   display.display();
 }
 
@@ -328,6 +336,9 @@ void handle_selection() {
   }
 }
 
+/**
+* Manages menu navigation & selection logic
+*/
 void menu_ctrl_logic(){
     if (MENU_IDX != MENU_IDX_LAST){
     MENU_IDX_LAST = MENU_IDX;
@@ -338,10 +349,12 @@ void menu_ctrl_logic(){
     SELECTION_OPT_LAST = SELECTION_OPT_IDX;
     option_selection_update();
   }
-  if (LED_BRIGHTNESS != LED_BRIGHTNESS_LAST) {
-    LED_BRIGHTNESS_LAST = LED_BRIGHTNESS;
-    draw_brightness_bar();
-  }
+
+  if (LED_BRIGHTNESS != LED_BRIGHTNESS_LAST) LED_BRIGHTNESS_LAST = LED_BRIGHTNESS; 
+  // if (CURRENT_MENU_DSP_STATE == DSP_BRIGHTNESS) {
+  //   LED_BRIGHTNESS = 10;
+  //   draw_brightness_bar();
+  // }
 
   if (counter > lastCounter) {
     shift_arr();
