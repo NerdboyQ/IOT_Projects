@@ -127,13 +127,14 @@ uint32_t reverse_pkt(uint32_t raw_data) {
 }
 
 void handleDfltColorMsg() {
-  float intensity = INC_BT_PKT.byte2/100.0f;
-  LED_Color tmp = COLOR_PALLETE[INC_BT_PKT.byte3]; 
+  float intensity = INC_BT_PKT.flds.byte2/100.0f;
+  LED_Color tmp = COLOR_PALLETE[INC_BT_PKT.flds.byte3]; 
   LED_Color clr = LED_Color{intensity, (float)(intensity*tmp.r), (float)(intensity*tmp.g), (float)(intensity*tmp.b)};
   set_strip(clr);
 }
 
 void setup() {
+  Serial.println(F("Booting..."));
   HM10.begin(9600);
   Serial.begin(9600);
   // while (!Serial) {
@@ -151,16 +152,18 @@ void setup() {
 void loop() {
   // Always check for bt messages, then print to the screen
   while (HM10.available() ) {
-    char bt_byte = HM10.read();
+    unsigned char bt_byte = HM10.read() & 0xFF;
     if (bt_byte == _DFLT_BT_PING) handlePing();
     else {
       buffer[buffer_index] = bt_byte;
-      Serial.println(buffer[buffer_index], HEX);
+      // Serial.println(buffer[buffer_index], HEX);
       buffer_index++;
       newMsgRcvd = true;
     }
+    Serial.print(F("received byte: 0x"));
+    Serial.println(bt_byte, HEX);
   }
-  switch (INC_BT_PKT.byte1){
+  switch (INC_BT_PKT.flds.byte1){
     case _SOLID:
       // solid needs no logic
       break;
@@ -178,42 +181,39 @@ void loop() {
   }
 
   if (buffer_index == PktSize) {
-    if (buffer[0] == _DFLT_BT_PING){
-      // send response
-      HM10.write(_DFLT_BT_RESP);
-    } else {
-      // Serial.println(buffer[0]);
-      INC_BT_PKT.byte0 = buffer[0];
-      INC_BT_PKT.byte1 = buffer[1];
-      INC_BT_PKT.byte2 = buffer[2];
-      INC_BT_PKT.byte3 = buffer[3];
-      Serial.print(F("Byte 0: "));
-      Serial.print(INC_BT_PKT.byte0, HEX);
-      Serial.print(F(", Byte 1: "));
-      Serial.print(INC_BT_PKT.byte1, HEX);
-      Serial.print(F(", Byte 2: "));
-      Serial.print(INC_BT_PKT.byte2, HEX);
-      Serial.print(F(", Byte 3: "));
-      Serial.println(INC_BT_PKT.byte3, HEX);
-      handleDfltColorMsg();
-      // newPkt = reverse_pkt(newPkt);
-      buffer_index = 0;
-      // for (char i = 0; i < PktSize; i++){
-      //   Serial.print("0x");
-      //   Serial.print(buffer[i], HEX);
-      //   Serial.print(" ");
-      // }
-      // Serial.println("");
-      // Serial.print(newPkt, HEX);
-      oldPkt = newPkt;
-      newPkt = 0; // reset newPkt
-      shift = 24; // reset shift
-      Serial.write("\n~\n");
-      // set_strip(CYAN);
-      delay(1000);
-      // set_strip(WHITE);
-      newMsgRcvd = false;
-    }
+    
+    // Serial.println(buffer[0]);
+    INC_BT_PKT.flds.byte0 = buffer[0];
+    INC_BT_PKT.flds.byte1 = buffer[1];
+    INC_BT_PKT.flds.byte2 = buffer[2];
+    INC_BT_PKT.flds.byte3 = buffer[3];
+    Serial.print(F("Byte 0: "));
+    Serial.print(INC_BT_PKT.flds.byte0, HEX);
+    Serial.print(F(", Byte 1: "));
+    Serial.print(INC_BT_PKT.flds.byte1, HEX);
+    Serial.print(F(", Byte 2: "));
+    Serial.print(INC_BT_PKT.flds.byte2, HEX);
+    Serial.print(F(", Byte 3: "));
+    Serial.println(INC_BT_PKT.flds.byte3, HEX);
+    handleDfltColorMsg();
+    // newPkt = reverse_pkt(newPkt);
+    buffer_index = 0;
+    // for (char i = 0; i < PktSize; i++){
+    //   Serial.print("0x");
+    //   Serial.print(buffer[i], HEX);
+    //   Serial.print(" ");
+    // }
+    // Serial.println("");
+    // Serial.print(newPkt, HEX);
+    oldPkt = newPkt;
+    newPkt = 0; // reset newPkt
+    shift = 24; // reset shift
+    Serial.write("\n~\n");
+    // set_strip(CYAN);
+    delay(1000);
+    // set_strip(WHITE);
+    newMsgRcvd = false;
+    
   }
   // adjust_intensity(100, 1);
   // // adjust_intensity(1, 100);

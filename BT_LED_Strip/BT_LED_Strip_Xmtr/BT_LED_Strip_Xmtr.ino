@@ -1,6 +1,6 @@
 #include <SPI.h>
 #include <Wire.h>
-#include <Adafruit_GFX.h>
+// #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
 #include <SoftwareSerial.h>
@@ -17,9 +17,9 @@ SoftwareSerial HM10(RX,TX);
 #define ENC_B 2
 #define SEL_C 4
 
-unsigned long _lastIncReadTime = micros();
-unsigned long _lastDecReadTime = micros();
-unsigned long _lastSelectTime = micros();
+uint32_t _lastIncReadTime = micros();
+uint32_t _lastDecReadTime = micros();
+uint32_t _lastSelectTime = micros();
 const uint16_t _pauseLength = 25000;
 
 volatile int8_t counter = 0;
@@ -109,31 +109,53 @@ int8_t incr;
 //   Serial.write("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 // }
 
+/**
+* Cleans up the serial output to avoid garbage data read
+*/
+void flushHM10Serial() {
+  HM10.setTimeout(1);
+  while (HM10.available()) {
+    HM10.read(); // Read and discard the incoming byte
+  }
+
+  HM10.setTimeout(1000);
+}
+
 void send_bt_msg() {
   Serial.println(F("Color Msg"));
-  HM10.write(OUT_BT_PKT.byte0);
-  HM10.write(OUT_BT_PKT.byte1);
-  HM10.write(OUT_BT_PKT.byte2);
-  HM10.write(OUT_BT_PKT.byte3);
+  HM10.write(OUT_BT_PKT.flds.byte0);
+  HM10.write(OUT_BT_PKT.flds.byte1);
+  HM10.write(OUT_BT_PKT.flds.byte2);
+  HM10.write(OUT_BT_PKT.flds.byte3);
   Serial.print(F("Byte 0: "));
-  Serial.print(OUT_BT_PKT.byte0, HEX);
+  Serial.print(OUT_BT_PKT.flds.byte0, HEX);
   Serial.print(F(", Byte 1: "));
-  Serial.print(OUT_BT_PKT.byte1, HEX);
+  Serial.print(OUT_BT_PKT.flds.byte1, HEX);
   Serial.print(F(", Byte 2: "));
-  Serial.print(OUT_BT_PKT.byte2, HEX);
+  Serial.print(OUT_BT_PKT.flds.byte2, HEX);
   Serial.print(F(", Byte 3: "));
-  Serial.println(OUT_BT_PKT.byte3, HEX);
+  Serial.println(OUT_BT_PKT.flds.byte3, HEX);
   // c = (c + 1) % 14;
   delay(500);
 }
 
 void statusPing() {
+  if (!activeConnection) Serial.print(F("[reconnection] "));
   Serial.println(F("pinging rcvr"));
+  Serial.print(F("last_req @ "));
+  Serial.println(_last_bt_resp);
+  _last_png_req = millis();
   HM10.write(_DFLT_BT_PING);
-  delay(500);
+  //for (int i = 0; i < 3; i++) HM10.write(0x0A+i); 
+  delay(100);
+  if (!activeConnection) delay(2500);
 }
 
+/**
+* Restablishes bt connection
+*/
 void reconnect_bt() {
+  _last_con_req = millis();
   display.clearDisplay();
   display.setCursor(0, 16);
   display.setTextSize(2);
@@ -143,22 +165,23 @@ void reconnect_bt() {
   delay(5);
 
   Serial.println(F("Re-establishing connection to receiver."));
+  
   char buffer[CONN_REQ_SZ];
   strcpy_P(buffer, RCVR_CONN_REQ);
   Serial.println(buffer);
   HM10.write(buffer);
-  delay(2500);
-  display.clearDisplay();
-  display.setCursor(0, 16);
-  display.write(F("CONNECTED!"));
-  display.display();
+  delay(250);
   statusPing();
 }
 
 void handlePingResp() {
-  Serial.println(F("Received Ping Response"));
+  Serial.print(F("Received Ping Response @ "));
   _last_bt_resp = millis();
-  activeConnection = true;
+  Serial.println(_last_bt_resp);
+  if (!activeConnection) {
+    activeConnection = true;
+    update_menu_title();
+  }
 }
 
 // ==================================================================================================================
@@ -223,7 +246,7 @@ void shift_arr(bool shiftUp=true) {
         incr*=-10;
         if (LED_BRIGHTNESS >=0 && incr < 0) LED_BRIGHTNESS+=incr;
         else if (LED_BRIGHTNESS < 100 && incr > 0) LED_BRIGHTNESS+=incr;
-        OUT_BT_PKT.byte2 = LED_BRIGHTNESS;
+        OUT_BT_PKT.flds.byte2 = LED_BRIGHTNESS;
       }
       break;
   }
@@ -294,10 +317,10 @@ void handle_selection() {
       SELECTION_OPT_IDX=0;
       update_menu_title();
     } else if(CURRENT_MENU_DSP_STATE == DSP_COLOR){
-      OUT_BT_PKT.byte3 = (uint8_t)SELECTION_OPT_IDX;
+      OUT_BT_PKT.flds.byte3 = (uint8_t)SELECTION_OPT_IDX;
       send_bt_msg();
     } else if (CURRENT_MENU_DSP_STATE == DSP_PATTERN) {
-      OUT_BT_PKT.byte1 = (uint8_t)SELECTION_OPT_IDX;
+      OUT_BT_PKT.flds.byte1 = (uint8_t)SELECTION_OPT_IDX;
       send_bt_msg();
     }
   } else {
@@ -391,44 +414,34 @@ void setup() {
   // Reset the HM10 BLE Module
   HM10.write("AT");
   delay(500);
+  flushHM10Serial();
+  delay(500);
   reconnect_bt();
-  activeConnection = true;
-  _last_bt_resp = millis();
 
   pinMode(TEST_LED, OUTPUT);
 
   update_menu_title();
-  // printHM10_settings();
-  
-  // digitalWrite(TEST_LED, HIGH);
-  // // Show initial display buffer contents on the screen --
-  // // the library initializes this with an Adafruit splash screen.
-  // display.display();
-  // delay(2000); // Pause for 2 seconds
-
-  // // Clear the buffer
-  // display.clearDisplay();
 }
 
-
-
-// int8_t n = 1;
-// bool newMsgRcvd = false;
 void loop() {
+  // Serial.print("activeConnection:");
+  // Serial.println(activeConnection);
   while (HM10.available()) {
+    uint8_t bt_byte = HM10.read() & 0xFF;
+    activeConnection = true;
     _last_bt_resp = millis();
-    uint8_t bt_byte = HM10.read();
+    Serial.print(F("Received: "));
+    Serial.print(bt_byte, HEX);
+    Serial.print(F(", @"));
+    Serial.println(_last_bt_resp);
     if (bt_byte == _DFLT_BT_RESP) handlePingResp();
   }
+  _curr_milli_t = millis();
+  _delta_milli_t = _curr_milli_t - _last_bt_resp;
+  if(!activeConnection & _curr_milli_t - _last_png_req > _bt_ping_interval) reconnect_bt();
+  else if (_delta_milli_t >= _bt_conn_timeout) activeConnection = false; // trigger to restablish connection
+  else if (_curr_milli_t - _last_png_req >= _bt_ping_interval) statusPing(); // ping on interval
+  
 
-  
-  if (millis() - _last_bt_resp > _bt_conn_timeout) activeConnection = false;
-  else if (millis() - _last_bt_resp > _bt_conn_timeout/2) statusPing();
-  
-  if(!activeConnection) reconnect_bt();
-  else {
-    // sendDftColor();
-  }
-  
   menu_ctrl_logic();
 }

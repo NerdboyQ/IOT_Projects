@@ -1,5 +1,5 @@
-#include <avr/pgmspace.h>
 #include <stdint.h>
+#include <avr/pgmspace.h>
 #ifndef __BT_LED_MSGs__
 #define __BT_LED_MSGs__
 
@@ -7,9 +7,14 @@
 // Dedicated BLE HM10 module
 // change for your specific module
 const char RCVR_CONN_REQ[CONN_REQ_SZ] PROGMEM = "AT+CON0035FF0D419B";
-const unsigned long _bt_conn_timeout PROGMEM = 100000;
+const unsigned long _bt_conn_timeout = 20000; // 20s, 20000ms
+const unsigned long _bt_ping_interval = _bt_conn_timeout/4; // 5s, 50000ms
 bool activeConnection = false;
-unsigned long _last_bt_resp = 0;
+volatile unsigned long _last_bt_resp = 0;
+volatile unsigned long _last_con_req = 0;
+volatile unsigned long _last_png_req = 0;
+volatile unsigned long _curr_milli_t = 0;
+volatile unsigned long _delta_milli_t = 0;
 
 typedef enum {
   _SOLID = 0x00,
@@ -42,7 +47,7 @@ typedef enum {
 }DfltColrByte;
 
 /**
-* BT Packet Data Structure
+* BT Packet Fields Data
 */
 typedef struct {
   // Byte 0 : header byte, for message type
@@ -53,7 +58,15 @@ typedef struct {
   unsigned char byte2:8;
   // Byte 3 : LED Color
   unsigned char byte3:8;
-}BtPkt;
+} BtPktFlds;
+
+/**
+* BT Packet Data Structure
+*/
+typedef union {
+  BtPktFlds flds;
+  uint32_t  pyld;
+} BtPkt;
 
 BtPkt INC_BT_PKT;
 
