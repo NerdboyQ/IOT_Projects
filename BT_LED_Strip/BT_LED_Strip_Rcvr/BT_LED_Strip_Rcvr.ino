@@ -20,12 +20,14 @@ bool pulse_on = false;
 * @led_color : LED_Color object
 */
 void set_strip(LED_Color led_color) {
-  Serial.print(F(", r: "));
-  Serial.print(led_color.r+0);
-  Serial.print(F(", g: "));
-  Serial.print(led_color.g+0);
-  Serial.print(F(", b: "));
-  Serial.println(led_color.b+0);
+  Serial.print(F("brightness: "));
+  Serial.print(INC_BT_PKT.flds.byte2+0);
+  Serial.print(F("%, r: 0x"));
+  Serial.print(led_color.r, HEX);
+  Serial.print(F(", g: 0x"));
+  Serial.print(led_color.g, HEX);
+  Serial.print(F(", b: 0x"));
+  Serial.println(led_color.b, HEX);
 
   for(int i=0; i<NUMPIXELS; i++) {
     pixels.setPixelColor(i, pixels.Color(led_color.r, led_color.g, led_color.b));
