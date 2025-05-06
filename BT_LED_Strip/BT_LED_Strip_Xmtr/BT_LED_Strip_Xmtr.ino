@@ -283,8 +283,8 @@ void option_selection_update(){
     display.setCursor(0,18);
     display.setTextSize(2);
     // char buffer[MAX_STR_SZ];
-    if (CURRENT_MENU_DSP_STATE == DSP_COLOR) strcpy_P(buffer, color_opts[SELECTION_OPT_IDX]);
-    else if (CURRENT_MENU_DSP_STATE == DSP_PATTERN) strcpy_P(buffer, pattern_opts[SELECTION_OPT_IDX]);
+    if (CURRENT_MENU_MODE == SELECT & CURRENT_MENU_DSP_STATE == DSP_COLOR) strcpy_P(buffer, color_opts[SELECTION_OPT_IDX]);
+    else if (CURRENT_MENU_MODE == SELECT & CURRENT_MENU_DSP_STATE == DSP_PATTERN) strcpy_P(buffer, pattern_opts[SELECTION_OPT_IDX]);
     
     display.println(buffer);
     display.display();
@@ -432,8 +432,6 @@ void setup() {
   reconnect_bt();
 
   pinMode(TEST_LED, OUTPUT);
-
-  update_menu_title();
 }
 
 void loop() {
@@ -441,6 +439,7 @@ void loop() {
   // Serial.println(activeConnection);
   while (HM10.available()) {
     uint8_t bt_byte = HM10.read() & 0xFF;
+    if (!activeConnection) update_menu_title(); // clear connecting text once connected
     activeConnection = true;
     _last_bt_resp = millis();
     Serial.print(F("Received: "));
