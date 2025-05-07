@@ -3,47 +3,50 @@
 #ifndef __BT_LED_MSGs__
 #define __BT_LED_MSGs__
 
-#define CONN_REQ_SZ 20
+#define CONN_REQ_SZ 20  // size of char array for BT Device Connection Request command
 // Dedicated BLE HM10 module
 // change for your specific module
-const char RCVR_CONN_REQ[CONN_REQ_SZ] PROGMEM = "AT+CON0035FF0D419B";
-const unsigned long _bt_conn_timeout = 20000; // 20s, 20000ms
-const unsigned long _bt_ping_interval = _bt_conn_timeout/4; // 5s, 50000ms
-bool activeConnection = false;
-volatile unsigned long _last_bt_resp = 0;
-volatile unsigned long _last_con_req = 0;
-volatile unsigned long _last_png_req = 0;
-volatile unsigned long _curr_milli_t = 0;
-volatile unsigned long _delta_milli_t = 0;
+const char RCVR_CONN_REQ[CONN_REQ_SZ] PROGMEM = "AT+CON0035FF0D419B"; // BT Device Connection Request command
+const unsigned long _bt_conn_timeout = 20000; // 20s (20000ms) wait for no slave response, trigger to attempt reconnection
+const unsigned long _bt_ping_interval = _bt_conn_timeout/4; // 5s (50000ms) ping interval to check for constant connection
+bool activeConnection = false; // tracks connection status
+volatile unsigned long _last_bt_resp = 0; // time of last bluetooth response from slave
+volatile unsigned long _last_con_req = 0; // time of last connection request to slave
+volatile unsigned long _last_png_req = 0; // time of last ping response from slave
+volatile unsigned long _curr_milli_t = 0; // current time in milliseconds
+volatile unsigned long _delta_milli_t = 0; // placeholder for elapsed time in milliseconds
 
+// LED Pattern Modes
 typedef enum {
-  _SOLID = 0x00,
-  _PULSE = 0x01,
-  _FADER = 0x02,
-  _RNBOW = 0x03,
+  _SOLID = 0x00, // Solid LED Pattern
+  _PULSE = 0x01, // Pulsing LED Pattern
+  _FADER = 0x02, // Fading LED Pattern
+  _RNBOW = 0x03, // Rainbow Color Pattern
 }Patterns;
 
+// HeadByte Recognized Values
 typedef enum {
-  _DFLT_BT_PING = 0x81,
-  _DFLT_BT_RESP = 0x7E,
-  _DFLT_BT_COLR = 0x65,
+  _DFLT_BT_PING = 0x81, // Master ping head byte
+  _DFLT_BT_RESP = 0x7E, // Slave response ack for received message head byte
+  _DFLT_BT_COLR = 0x65, // Color command head byte
 }HeadByte;
 
+// Bytes for color options
 typedef enum {
-  _OFF = 0x00,
-  _WHITE = 0x01,
-  _RED = 0x02,
-  _ROSE = 0x03,
-  _MAGENTA = 0x04,
-  _VIOLET = 0x05,
-  _BLUE = 0x06,
-  _AZURE = 0x07,
-  _CYAN = 0x08,
-  _SPRING_GREEN = 0x09,
-  _GREEN = 0x0A,
-  _CHARTREUSE = 0x0B,
-  _YELLOW = 0x0C,
-  _ORANGE = 0x0D,
+  _OFF = 0x00, // Off Color Option
+  _WHITE = 0x01, // White Color Option
+  _RED = 0x02, // Red Color Option
+  _ROSE = 0x03, // Rose Color Option
+  _MAGENTA = 0x04, // Magenta Color Option
+  _VIOLET = 0x05, // Violet Color Option
+  _BLUE = 0x06, // Blue Color Option
+  _AZURE = 0x07, // Azure Color Option
+  _CYAN = 0x08, // Cyan Color Option
+  _SPRING_GREEN = 0x09, // Spring Green Color Option
+  _GREEN = 0x0A, // Green Color Option
+  _CHARTREUSE = 0x0B, // Chartreuse Color Option
+  _YELLOW = 0x0C, // Yellow Color Option
+  _ORANGE = 0x0D, // Orange Color Option
 }DfltColrByte;
 
 /**
@@ -68,7 +71,7 @@ typedef union {
   uint32_t  pyld;
 } BtPkt;
 
-BtPkt INC_BT_PKT;
+BtPkt INC_BT_PKT; // Placeholder for storing the BT Message Packet
 
 BtPkt OUT_BT_PKT = {_DFLT_BT_COLR, _SOLID, 0x64, _WHITE};
 

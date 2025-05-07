@@ -24,23 +24,27 @@
 // 	0x01, 0x00, 0x02, 0x00, 0x04, 0x00, 0x30, 0x0c, 0x48, 0x12, 0x4b, 0xd2, 0x30, 0x0c, 0x00, 0x00
 // };
 
+// Menu Display States
 typedef enum{
-  DSP_COLOR,
-  DSP_PATTERN,
-  DSP_BRIGHTNESS,
+  DSP_COLOR,  // When in Color selection menu
+  DSP_PATTERN,  // When in Pattern selection menu 
+  DSP_BRIGHTNESS, // When in Brightness selection menu
 }MENU_DSP_STATE;
 
+// Menu Mode
 typedef enum{
-  NAVIGATION,
-  SELECT,
+  NAVIGATION, // When navigating through adjustable menus options
+  SELECT, // When in selection mode for an adjustable menu option
 }MENU_MODE;
 
+// Menu titles for the OLED display
 const char menu_titles[MENU_OPT_N][MAX_STR_SZ] PROGMEM = {
-  "COLOR",
-  "PATTERN",
-  "BRIGHTNESS"
+  "COLOR", // Color Menu Title
+  "PATTERN", // Pattern Menu Title
+  "BRIGHTNESS" // Brightness Menu Title
 };
 
+// Color Option Strings
 const char color_opts[COLOR_OPT_N][MAX_STR_SZ] PROGMEM = {
   "OFF",
   "WHITE",
@@ -59,6 +63,7 @@ const char color_opts[COLOR_OPT_N][MAX_STR_SZ] PROGMEM = {
   "CANCEL"
 };
 
+// Pattern Option Strings
 const char pattern_opts[PATTERN_OPT_N][MAX_STR_SZ] PROGMEM = {
   "SOLID",
   "PULSE",
@@ -67,16 +72,16 @@ const char pattern_opts[PATTERN_OPT_N][MAX_STR_SZ] PROGMEM = {
   "CANCEL"
 };
 
-int8_t MENU_IDX_LAST = 0;
-int8_t MENU_IDX = 0;
-int8_t SELECTION_OPT_LAST = -1;
-int8_t SELECTION_OPT_IDX = -1;
-int8_t LED_BRIGHTNESS_LAST = 100;
-int8_t LED_BRIGHTNESS = 10;
+int8_t MENU_IDX_LAST = 0; // tracks last menu index
+int8_t MENU_IDX = 0; // tracks current menu index
+int8_t SELECTION_OPT_LAST = -1; // tracks last menu option index
+int8_t SELECTION_OPT_IDX = -1; // tracks current menu option index
+int8_t LED_BRIGHTNESS_LAST = 100; // tracks last lighting menu setting
+int8_t LED_BRIGHTNESS = 10; // tracks current lighting menu setting
 
-MENU_MODE CURRENT_MENU_MODE = NAVIGATION;
-MENU_DSP_STATE CURRENT_MENU_DSP_STATE = DSP_COLOR;
-char* MENU_TITLE = menu_titles[MENU_IDX];
-char* OPT_SEL; 
+MENU_MODE CURRENT_MENU_MODE = NAVIGATION; // Tracks current menu mode
+MENU_DSP_STATE CURRENT_MENU_DSP_STATE = DSP_COLOR; // Tracks the current menu display state
+char* MENU_TITLE = menu_titles[MENU_IDX]; // Stores current menu display title
+char* OPT_SEL; // Stores current menu selection option
 
 #endif

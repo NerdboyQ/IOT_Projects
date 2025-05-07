@@ -1,19 +1,26 @@
+/**
+Serves as Receiver code for LED Strip to receive control messages via Bluetooth Communication
+
+Author : Princton C. Brennan
+Model : Arduino Nano
+*/
+
 #include <Adafruit_NeoPixel.h>
 #include "bt_led_comm.h"
 
 #include <SoftwareSerial.h>
 #define RX 10 // Connect to HM10 TX for both AT and normal modes
 #define TX 11  // Connect to HM10 RX for both AT and normal modes
-SoftwareSerial HM10(RX,TX);
+SoftwareSerial HM10(RX,TX); // Interface for BT Module Communication
 #include "bt_led_msgs.h"
 
-#define PIXEL_PIN 12
-#define NUMPIXELS 300
-#define DELAYVAL 500
+#define PIXEL_PIN 12  // pin to control LED settings
+#define NUMPIXELS 300 // LED Strip LED count
 
-Adafruit_NeoPixel pixels(NUMPIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel pixels(NUMPIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800); // Pixel Instance
 
-bool pulse_on = false;
+bool pulse_on = false; // tracks pulse state
+
 /**
 * Sets the LED strip color and intensity
 *
@@ -111,30 +118,29 @@ char shift = 24;
 unsigned char buffer[PktSize];
 char buffer_index;
 
-
+/**
+* Response to confirm received ping
+*/
 void handlePing() {
   Serial.println("Handling ping");
   HM10.write(_DFLT_BT_RESP);
   buffer_index = 0;
 }
 
-uint32_t reverse_pkt(uint32_t raw_data) {
-  uint32_t flipped = 0;
-  for (char n = 0; n < 32; n+=8){
-    uint32_t tmp = (0xFF & (raw_data >> n));
-    flipped = (flipped << (24 - n)) | tmp;
-  }
-
-  return flipped;
-}
-
+/**
+* Function to parse Color Command messages
+*/
 void handleDfltColorMsg() {
   float intensity = INC_BT_PKT.flds.byte2/100.0f;
   LED_Color tmp = COLOR_PALLETE[INC_BT_PKT.flds.byte3]; 
   LED_Color clr = LED_Color{intensity, (float)(intensity*tmp.r), (float)(intensity*tmp.g), (float)(intensity*tmp.b)};
   set_strip(clr);
 }
+// ==================================================================================================================
 
+/**
+* Initial setup ran when powered up
+*/
 void setup() {
   Serial.println(F("Booting..."));
   HM10.begin(9600);
@@ -144,15 +150,15 @@ void setup() {
   // }
   printHM10_settings();
   
-  pixels.begin();
+  pixels.begin(); // initializes the LED strip
 
-  handleDfltColorMsg();
+  handleDfltColorMsg(); // sets initial color
 }
 
 
 
 void loop() {
-  // Always check for bt messages, then print to the screen
+  // Always check for new bt messages, then print to the screen
   while (HM10.available() ) {
     unsigned char bt_byte = HM10.read() & 0xFF;
     if (bt_byte == _DFLT_BT_PING) handlePing();
@@ -198,26 +204,14 @@ void loop() {
     Serial.print(F(", Byte 3: "));
     Serial.println(INC_BT_PKT.flds.byte3, HEX);
     handleDfltColorMsg();
-    // newPkt = reverse_pkt(newPkt);
+    
     buffer_index = 0;
-    // for (char i = 0; i < PktSize; i++){
-    //   Serial.print("0x");
-    //   Serial.print(buffer[i], HEX);
-    //   Serial.print(" ");
-    // }
-    // Serial.println("");
-    // Serial.print(newPkt, HEX);
     oldPkt = newPkt;
     newPkt = 0; // reset newPkt
     shift = 24; // reset shift
     Serial.write("\n~\n");
-    // set_strip(CYAN);
     delay(1000);
-    // set_strip(WHITE);
     newMsgRcvd = false;
     
   }
-  // adjust_intensity(100, 1);
-  // // adjust_intensity(1, 100);
-  // loop_colors();
 }

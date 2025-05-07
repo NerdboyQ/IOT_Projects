@@ -1,3 +1,10 @@
+/**
+Serves as the Transmitter/Remote code to control an LED strip via Bluetooth Communcation
+
+Author : Princton C. Brennan
+Model : Arduino Pro Mini 5V
+*/
+
 #include <SPI.h>
 #include <Wire.h>
 // #include <Adafruit_GFX.h>
@@ -7,7 +14,7 @@
 #define TEST_LED 5
 #define RX 6// Connect to HM10 TX for both AT and normal modes
 #define TX 7  // Connect to HM10 RX for both AT and normal modes
-SoftwareSerial HM10(RX,TX);
+SoftwareSerial HM10(RX,TX); // Interface for BT Module Communication
 
 #include "control_menu.h"
 #include "bt_led_msgs.h"
@@ -17,13 +24,15 @@ SoftwareSerial HM10(RX,TX);
 #define ENC_B 2
 #define SEL_C 4
 
-uint32_t _lastIncReadTime = micros();
-uint32_t _lastDecReadTime = micros();
-uint32_t _lastSelectTime = micros();
-const uint16_t _pauseLength = 25000;
+// Variables for tracking encoder reading times
+uint32_t _lastIncReadTime = micros(); // tracks last increment read from rotary encoder
+uint32_t _lastDecReadTime = micros(); // tracks last decrement read from rotary encoder
+uint32_t _lastSelectTime = micros();  // tracks last select time from rotary encoder button
 
-volatile int8_t counter = 0;
-volatile int8_t lastCounter = counter;
+const uint16_t _pauseLength = 25000; // long press pause
+
+volatile int8_t counter = 0; // counter for rotary encoder
+volatile int8_t lastCounter = counter; // prvious rotary encode counter value
 
 // Interrupt_Routine to process encode transitions
 void read_encoder() {
@@ -66,27 +75,10 @@ void read_encoder() {
 // On an arduino LEONARDO:   2(SDA),  3(SCL), ...
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET); // I2C Instance for OLED Display
 
-char buffer[MAX_STR_SZ];
-int8_t incr;
-// ==================================================================================================================
-// BT Functions
-// bool sendAtCmd(char* cmd) {
-//   Serial.write("========================\n\n");
-//   Serial.write("Cmd:");
-//   Serial.write(cmd);
-//   Serial.write("\n");
-//   HM10.write(cmd);
-  
-//   if (String(cmd).indexOf("DISC") > 0) delay(3500); // default scan time is 3s
-//   else delay(500);
-//   while (HM10.available()) {
-//     Serial.write(HM10.read());
-//   }
-//   Serial.write("\n");
-//   return 1;
-// }
+char buffer[MAX_STR_SZ];  // buffer to store strings retrieved from Program memory  
+int8_t incr;  // increment value for arrays
 
 /**
 * Print HM10 Settings
@@ -121,6 +113,9 @@ void flushHM10Serial() {
   HM10.setTimeout(1000);
 }
 
+/**
+* Sends BT Message to slave device
+*/
 void send_bt_msg() {
   OUT_BT_PKT.flds.byte2 = LED_BRIGHTNESS;
   Serial.println(F("Color Msg"));
@@ -140,6 +135,9 @@ void send_bt_msg() {
   delay(500);
 }
 
+/**
+* Pings the slave device
+*/
 void statusPing() {
   if (!activeConnection) Serial.print(F("[reconnection] "));
   Serial.println(F("pinging rcvr"));
@@ -351,10 +349,6 @@ void menu_ctrl_logic(){
   }
 
   if (LED_BRIGHTNESS != LED_BRIGHTNESS_LAST) LED_BRIGHTNESS_LAST = LED_BRIGHTNESS; 
-  // if (CURRENT_MENU_DSP_STATE == DSP_BRIGHTNESS) {
-  //   LED_BRIGHTNESS = 10;
-  //   draw_brightness_bar();
-  // }
 
   if (counter > lastCounter) {
     shift_arr();
@@ -394,6 +388,9 @@ void menu_ctrl_logic(){
 }
 // ==================================================================================================================
 
+/**
+* Initial setup ran when powered up
+*/
 void setup() {
   
   Serial.begin(9600);
@@ -434,6 +431,9 @@ void setup() {
   pinMode(TEST_LED, OUTPUT);
 }
 
+/**
+* Main Loop
+*/
 void loop() {
   // Serial.print("activeConnection:");
   // Serial.println(activeConnection);

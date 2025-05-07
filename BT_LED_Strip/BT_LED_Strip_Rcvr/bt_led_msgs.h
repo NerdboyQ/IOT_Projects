@@ -1,34 +1,37 @@
 #ifndef __BT_LED_MSGs__
 #define __BT_LED_MSGs__
 
+// LED Pattern Modes
 typedef enum {
-  _SOLID = 0x00,
-  _PULSE = 0x01,
-  _FADER = 0x02,
-  _RNBOW = 0x03,
+  _SOLID = 0x00, // Solid LED Pattern
+  _PULSE = 0x01, // Pulsing LED Pattern
+  _FADER = 0x02, // Fading LED Pattern
+  _RNBOW = 0x03, // Rainbow Color Pattern
 }Patterns;
 
+// HeadByte Recognized Values
 typedef enum {
-  _DFLT_BT_PING = 0x81,
-  _DFLT_BT_RESP = 0x7E,
-  _DFLT_BT_COLR = 0x65,
+  _DFLT_BT_PING = 0x81, // Master ping head byte
+  _DFLT_BT_RESP = 0x7E, // Slave response ack for received message head byte
+  _DFLT_BT_COLR = 0x65, // Color command head byte
 }HeadByte;
 
+// Bytes for color options
 typedef enum {
-  _OFF = 0x00,
-  _WHITE = 0x01,
-  _RED = 0x02,
-  _ROSE = 0x03,
-  _MAGENTA = 0x04,
-  _VIOLET = 0x05,
-  _BLUE = 0x06,
-  _AZURE = 0x07,
-  _CYAN = 0x08,
-  _SPRING_GREEN = 0x09,
-  _GREEN = 0x0A,
-  _CHARTREUSE = 0x0B,
-  _YELLOW = 0x0C,
-  _ORANGE = 0x0D,
+  _OFF = 0x00, // Off Color Option
+  _WHITE = 0x01, // White Color Option
+  _RED = 0x02, // Red Color Option
+  _ROSE = 0x03, // Rose Color Option
+  _MAGENTA = 0x04, // Magenta Color Option
+  _VIOLET = 0x05, // Violet Color Option
+  _BLUE = 0x06, // Blue Color Option
+  _AZURE = 0x07, // Azure Color Option
+  _CYAN = 0x08, // Cyan Color Option
+  _SPRING_GREEN = 0x09, // Spring Green Color Option
+  _GREEN = 0x0A, // Green Color Option
+  _CHARTREUSE = 0x0B, // Chartreuse Color Option
+  _YELLOW = 0x0C, // Yellow Color Option
+  _ORANGE = 0x0D, // Orange Color Option
 }DfltColrByte;
 
 /**
@@ -53,5 +56,5 @@ typedef union {
   uint32_t  pyld;
 } BtPkt;
 
-BtPkt INC_BT_PKT = {_DFLT_BT_COLR, _SOLID, 0x14, _VIOLET};
+BtPkt INC_BT_PKT = {_DFLT_BT_COLR, _SOLID, 0x14, _VIOLET}; // Placeholder for incoming BT Message Packet
 #endif
